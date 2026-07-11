@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suppressor Comparison — Desi Arms</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+  /* ============================================================
+     DATA-DRIVEN DISPLAY. All suppressor data lives in the
+     <script> JSON block near the bottom. Edit numbers there;
+     never touch this CSS or render logic to update specs.
+     Bump LAST_UPDATED in the script when you revise figures.
+     ============================================================ */
+  :root {
+    /* Desi Arms brand system: navy + red on warm paper */
+    --ink: #1a2a3a; --steel: #6b7280; --hairline: #d4cfc7;
+    --paper: #f5f2ed; --card: #ffffff;
+    --brass: #D32434; --brass-soft: #f7dcdf;   /* accent -> brand red */
+    --flow: #2e4057; --flow-soft: #dde3ea;      /* camp accents kept navy-family + red */
+    --quiet: #1a2a3a; --quiet-soft: #dfe3e8;
+    --value: #a01c28; --value-soft: #f3d9dc;
+    --budget: #5a6470; --budget-soft: #e3e5e2;
+    --safe: #1a8a50; --warn: #a01c28; --absent: #a01c28;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink); background: var(--paper); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 20px; }
+
+  header { border-bottom: 2px solid var(--ink); padding: 32px 0 26px; margin-bottom: 8px; text-align: center; }
+  .logo-wrapper { margin-bottom: 6px; }
+  .logo-wrapper img { max-width: 240px; height: auto; }
+  .tagline { text-align: center; font-family: "Barlow Condensed", sans-serif; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--steel); font-weight: 600; margin-bottom: 16px; }
+  .red-rule { width: 60px; height: 3px; background: var(--brass); margin: 14px auto 16px; border-radius: 2px; }
+  .eyebrow { font-family: "Barlow Condensed", sans-serif; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--brass); font-weight: 700; margin-bottom: 10px; }
+  h1 { font-family: "Barlow Condensed", sans-serif; font-size: clamp(30px,5vw,48px); font-weight: 700; letter-spacing: 0.02em; line-height: 1.05; text-transform: uppercase; color: var(--ink); }
+  .sub { margin: 14px auto 0; max-width: 660px; color: var(--steel); font-size: 15.5px; }
+  .meta-row { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--steel); align-items: center; justify-content: center; }
+  .stamp { display: inline-flex; align-items: center; gap: 6px; background: var(--brass-soft); color: var(--absent); padding: 4px 10px; border-radius: 3px; font-weight: 600; }
+
+  /* ---- First-time CTA banner ---- */
+  .finder-banner {
+    background: var(--ink); color: #fff; border-radius: 10px;
+    padding: 26px 26px; margin: 26px 0 8px; display: flex;
+    align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  }
+  .finder-banner .fb-text h2 { font-family: "Barlow Condensed",sans-serif; font-size: 24px; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 5px; }
+  .finder-banner .fb-text p { color: #c2c7cd; font-size: 14px; max-width: 460px; }
+  .finder-banner button {
+    background: var(--brass); color: #fff; border: none; cursor: pointer;
+    font-family: inherit; font-weight: 700; font-size: 15px; padding: 13px 26px;
+    border-radius: 6px; letter-spacing: 0.02em; white-space: nowrap;
+  }
+  .finder-banner button:hover { background: var(--value); }
+
+  /* ---- Quiz modal ---- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,23,26,0.55);
+    display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50;
+  }
+  .overlay.open { display: flex; }
+  .quiz {
+    background: var(--paper); border-radius: 12px; max-width: 560px; width: 100%;
+    max-height: 92vh; overflow-y: auto; box-shadow: 0 18px 50px rgba(0,0,0,0.3);
+  }
+  .quiz-head { padding: 22px 26px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+  .quiz-head .qstep { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); font-weight: 700; }
+  .quiz-close { background: none; border: none; font-size: 26px; line-height: 1; color: var(--steel); cursor: pointer; padding: 0; }
+  .progress { height: 4px; background: var(--hairline); border-radius: 3px; margin: 14px 26px 0; overflow: hidden; }
+  .progress span { display: block; height: 100%; background: var(--brass); transition: width 0.25s ease; }
+  .quiz-body { padding: 18px 26px 8px; }
+  .quiz-body h3 { font-family: "Barlow Condensed",sans-serif; font-size: 23px; margin-bottom: 4px; line-height: 1.15; }
+  .quiz-body .qhelp { font-size: 13.5px; color: var(--steel); margin-bottom: 18px; }
+  .opt {
+    display: block; width: 100%; text-align: left; background: var(--card);
+    border: 1.5px solid var(--hairline); border-radius: 8px; padding: 14px 16px;
+    margin-bottom: 10px; cursor: pointer; font-family: inherit; transition: all 0.12s ease;
+  }
+  .opt:hover { border-color: var(--steel); }
+  .opt.sel { border-color: var(--brass); background: var(--brass-soft); }
+  .opt .ot { font-weight: 700; font-size: 15px; display: block; }
+  .opt .od { font-size: 12.5px; color: var(--steel); margin-top: 2px; }
+  .opt .check { float: right; width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid var(--hairline); }
+  .opt.sel .check { background: var(--brass); border-color: var(--brass); position: relative; }
+  .opt.sel .check::after { content:"✓"; color:#fff; font-size:13px; position:absolute; top:0; left:4px; font-weight:700; }
+  .multi-hint { font-size: 12px; color: var(--brass); font-weight: 600; margin-bottom: 12px; }
+  .quiz-foot { padding: 8px 26px 24px; display: flex; justify-content: space-between; gap: 12px; }
+  .qbtn { font-family: inherit; font-weight: 700; font-size: 14px; padding: 11px 22px; border-radius: 6px; cursor: pointer; border: none; }
+  .qbtn.ghost { background: none; color: var(--steel); border: 1.5px solid var(--hairline); }
+  .qbtn.prime { background: var(--brass); color: #fff; }
+  .qbtn.prime:disabled { background: var(--hairline); color: var(--steel); cursor: not-allowed; }
+
+  /* ---- Result panel ---- */
+  .result { padding: 6px 26px 26px; }
+  .result .rlabel { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); font-weight: 700; margin-bottom: 6px; }
+  .rec-card { background: var(--card); border: 1px solid var(--hairline); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+  .rec-top { padding: 18px 20px; border-bottom: 1px solid var(--hairline); }
+  .rec-top .rbrand { font-size: 12px; color: var(--steel); font-weight: 600; }
+  .rec-top .rmodel { font-family: "Barlow Condensed",sans-serif; font-size: 22px; font-weight: 700; margin: 2px 0 4px; }
+  .rec-top .rprice { font-size: 14px; color: var(--ink); font-weight: 600; }
+  .rec-why { padding: 14px 20px; font-size: 13.5px; }
+  .rec-why .wt { font-weight: 700; margin-bottom: 4px; }
+  .runner { background: var(--card); border: 1px solid var(--hairline); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; font-size: 13px; }
+  .runner b { font-family: "Barlow Condensed",sans-serif; }
+  .result-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+
+  /* ---- Host filter ---- */
+  .controls { background: var(--card); border: 1px solid var(--hairline); border-radius: 8px; padding: 20px 22px; margin: 26px 0 14px; }
+  .controls h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .controls p { font-size: 13px; color: var(--steel); margin-bottom: 16px; }
+  .host-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .host-btn { border: 1.5px solid var(--hairline); background: var(--paper); border-radius: 6px; padding: 12px 16px; cursor: pointer; text-align: left; min-width: 180px; flex: 1; transition: all 0.15s ease; font-family: inherit; }
+  .host-btn:hover { border-color: var(--steel); }
+  .host-btn.active { border-color: var(--brass); background: var(--brass-soft); }
+  .host-btn .hname { font-weight: 700; font-size: 14.5px; display: block; }
+  .host-btn .hdesc { font-size: 12px; color: var(--steel); margin-top: 2px; }
+  .host-btn .check { float: right; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--hairline); display: inline-block; }
+  .host-btn.active .check { background: var(--brass); border-color: var(--brass); position: relative; }
+  .host-btn.active .check::after { content:"✓"; color:#fff; font-size:12px; position:absolute; top:-1px; left:3px; font-weight:700; }
+  .reset { background: none; border: none; color: var(--brass); cursor: pointer; font-size: 12.5px; font-weight: 600; margin-top: 14px; font-family: inherit; text-decoration: underline; padding: 0; }
+
+  /* ---- Camp sections ---- */
+  .camp { margin: 34px 0; }
+  .camp-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; flex-wrap: wrap; }
+  .camp-tag { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; padding: 3px 9px; border-radius: 3px; color: #fff; }
+  .camp-flow .camp-tag { background: var(--flow); }
+  .camp-quiet .camp-tag { background: var(--quiet); }
+  .camp-value .camp-tag { background: var(--value); }
+  .camp-budget .camp-tag { background: var(--budget); }
+  .camp-head h3 { font-family: "Barlow Condensed",sans-serif; font-size: 21px; font-weight: 700; }
+  .camp-note { font-size: 13.5px; color: var(--steel); margin: 6px 0 18px; max-width: 720px; }
+
+  /* ---- Cards ---- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--hairline); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.15s ease; }
+  .card.fit { box-shadow: 0 0 0 2px var(--brass); }
+  .card.dim { opacity: 0.4; }
+  .card-top { padding: 18px 18px 14px; border-bottom: 1px solid var(--hairline); }
+  .card .brand { font-size: 12px; color: var(--steel); font-weight: 600; letter-spacing: 0.03em; }
+  .card .model { font-family: "Barlow Condensed",sans-serif; font-size: 19px; font-weight: 700; margin: 2px 0 8px; line-height: 1.15; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 7px; border-radius: 3px; }
+  .badge.camp-flow-b { background: var(--flow-soft); color: var(--flow); }
+  .badge.camp-quiet-b { background: var(--quiet-soft); color: var(--quiet); }
+  .badge.camp-value-b { background: var(--value-soft); color: var(--value); }
+  .badge.camp-budget-b { background: var(--budget-soft); color: var(--budget); }
+  .badge.hub { background: #e3ebe3; color: var(--safe); }
+  .badge.prop { background: #f4e3d3; color: var(--absent); }
+  .badge.dt { background: #e6e0d6; color: #6b5544; }
+  .badge.fit-badge { background: var(--brass); color: #fff; }
+  .specs { padding: 6px 18px 14px; }
+  .spec { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dotted var(--hairline); font-size: 13.5px; }
+  .spec:last-child { border-bottom: none; }
+  .spec .k { color: var(--steel); }
+  .spec .v { font-weight: 600; text-align: right; }
+  .db-block { padding: 12px 18px 16px; background: var(--paper); border-top: 1px solid var(--hairline); }
+  .db-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); font-weight: 700; margin-bottom: 5px; }
+  .db-val { font-size: 13.5px; }
+  .src { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 3px; margin-top: 8px; letter-spacing: 0.03em; }
+  .src.independent { background: #e3ebe3; color: var(--safe); }
+  .src.claimed { background: #faf0dc; color: var(--warn); }
+  .src.none { background: #f2e0e0; color: #9a3a3a; }
+  .price-row { padding: 14px 18px; margin-top: auto; border-top: 1px solid var(--hairline); }
+  .price { font-family: "Barlow Condensed",sans-serif; font-size: 19px; font-weight: 700; }
+  .price .cur { font-size: 13px; color: var(--steel); font-weight: 400; }
+
+  /* ---- Legend ---- */
+  .legend { background: var(--card); border: 1px solid var(--hairline); border-radius: 8px; padding: 22px; margin: 30px 0; }
+  .legend h3 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+  .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; }
+  .legend-item { font-size: 13px; display: flex; gap: 9px; align-items: flex-start; }
+  .legend-item .chip { flex-shrink: 0; margin-top: 2px; }
+  .chip { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .disclaimer { font-size: 12.5px; color: var(--steel); line-height: 1.6; border-top: 1px solid var(--hairline); margin-top: 18px; padding-top: 16px; }
+
+  .cta { background: var(--ink); color: #fff; border-radius: 8px; padding: 30px 26px; margin: 30px 0 50px; text-align: center; }
+  .cta h3 { font-family: "Barlow Condensed",sans-serif; font-size: 23px; margin-bottom: 8px; }
+  .cta p { color: #c2c7cd; font-size: 14.5px; max-width: 520px; margin: 0 auto 18px; }
+  .cta a { display: inline-block; background: var(--brass); color: #fff; text-decoration: none; font-weight: 700; padding: 12px 26px; border-radius: 6px; font-size: 14.5px; letter-spacing: 0.02em; }
+
+  footer { font-size: 12px; color: var(--steel); padding: 24px 0 40px; text-align: center; }
+
+  @media (max-width: 560px) {
+    .host-btn { min-width: 100%; }
+    .cards { grid-template-columns: 1fr; }
+    .finder-banner button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo-wrapper">
+      <img src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg" onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'" alt="Desi Arms"/>
+    </div>
+    <div class="tagline">— We've Got Your Six —</div>
+    <div class="red-rule"></div>
+    <div class="eyebrow">Suppressor Selection Guide</div>
+    <h1>Suppressor Comparison</h1>
+    <p class="sub">Currently covering eight .30 cal cans, sorted by the trade-off that actually matters when one suppressor serves several rifles. New to suppressors? Use the guided picker — a few plain questions and we'll point you to the right can.</p>
+    <div class="meta-row">
+      <span class="stamp">⟳ Specs &amp; pricing last reviewed: <span id="updated"></span></span>
+      <span>Sound data from independent labs where available — see methodology below.</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="finder-banner">
+    <div class="fb-text">
+      <h2>First suppressor? Start here.</h2>
+      <p>Answer four quick questions about your rifles and what matters to you. No jargon — we'll translate.</p>
+    </div>
+    <button id="openQuiz">Find my suppressor →</button>
+  </div>
+
+  <div class="controls">
+    <h2>Or browse by your hosts</h2>
+    <p>Select the rifles this suppressor will run on. Cans that suit your setup get highlighted.</p>
+    <div class="host-grid" id="hostGrid"></div>
+    <button class="reset" id="resetBtn" style="display:none;">Clear selection</button>
+  </div>
+
+  <div id="campContainer"></div>
+
+  <div class="legend">
+    <h3>How to read this</h3>
+    <div class="legend-grid">
+      <div class="legend-item"><span class="chip src independent">Independent</span><span>Sound figure from a third-party lab (PEW Science / published shoot-off). Most trustworthy and comparable.</span></div>
+      <div class="legend-item"><span class="chip src claimed">Mfr. claimed</span><span>Number published by the maker on their own rig. Useful, but not directly comparable across brands.</span></div>
+      <div class="legend-item"><span class="chip src none">No data yet</span><span>No independent or published dB figure. Judge on design intent, not numbers.</span></div>
+      <div class="legend-item"><span class="chip badge hub">HUB</span><span>Universal 1.375×24 rear thread. Swap any HUB mount or direct-thread adapter across rifles.</span></div>
+      <div class="legend-item"><span class="chip badge prop">Proprietary</span><span>Brand-specific mount. Needs that brand's muzzle device on each host.</span></div>
+      <div class="legend-item"><span class="chip camp-tag" style="background:var(--flow)">Flow</span><span>Flow-through / low back pressure — less gas-to-face and easier cycling on semi-autos.</span></div>
+    </div>
+    <p class="disclaimer">
+      <strong>About the sound numbers:</strong> decibel and suppression figures come from different test setups, hosts, and ammunition, so treat them as directional rather than head-to-head. The most comparable data here is from PEW Science, measured 1 meter left of the muzzle on a common rifle. On supersonic .30 cal, every can on this list lands within a few decibels of the others — the real separators are back pressure, mounting, weight, and durability, not raw dB. No suppressor makes a supersonic centerfire rifle "hearing safe"; eye and ear protection is still recommended. Prices are typical retail ranges and move with rebates and availability — confirm current pricing and lead time with us.
+    </p>
+  </div>
+
+  <div class="cta">
+    <h3>Not sure which fits your build?</h3>
+    <p>We stock, mount, and process the paperwork in-house. Bring your hosts in or send us your setup and we'll narrow it to the right can — and handle the Form 4 from start to finish.</p>
+    <a href="mailto:sales@desiarms.com?subject=Suppressor%20inquiry">Talk to us about your build</a>
+  </div>
+
+</div>
+
+<footer>
+  <div class="wrap">Desi Arms · North Carolina · Full-service FFL: sales, gunsmithing, engraving, range &amp; training</div>
+</footer>
+
+<!-- ===== Quiz modal ===== -->
+<div class="overlay" id="overlay">
+  <div class="quiz" id="quiz" role="dialog" aria-modal="true" aria-label="Suppressor finder"></div>
+</div>
+
+<script>
+/* =================================================================
+   EDIT ZONE. Update everything below to revise the guide.
+   LAST_UPDATED: bump whenever you touch specs or pricing.
+   camp = "flow" | "quiet" | "value".
+   dbSource = "independent" | "claimed" | "none".
+   hosts: host IDs this can suits well (drives card highlighting).
+   traits: scoring profile for the finder, each 0-5:
+     quiet  = raw suppression on supers
+     lowbp  = low back pressure / gas-gun friendliness
+     light  = lightweight handling
+     value  = price-to-performance
+     durable= sustained-fire / hard-use toughness
+   useFit: bonus points for use cases (range/hunt/tactical/precision)
+   ================================================================= */
+
+const LAST_UPDATED = "July 2026";
+
+const HOSTS = [
+  { id: "mk18", name: "DD MK18 — 300 BLK", desc: "Short barrel, direct-impingement, supers + subs" },
+  { id: "scar", name: "SCAR 17H — 7.62",   desc: "Gas piston, known for blowback" },
+  { id: "r308", name: ".308 rifle",        desc: "General 7.62 / .308 host" }
+];
+
+const SUPPRESSORS = [
+  {
+    brand: "HUXWRX", model: "FLOW 762 Ti", camp: "flow",
+    mount: "Proprietary taper-QD (LH)", mountType: "prop",
+    material: "3D-printed Grade 5 titanium",
+    weight: "11.8 oz", length: "6.7 in", dia: "1.8 in", fa: "Yes",
+    db: "At-ear .308 competitive with advanced baffle cans; near-zero back pressure (bolt-velocity within ±5% of unsuppressed).",
+    dbSource: "independent",
+    price: "$1,150 – 1,200", note: "Comes with QD muzzle brake.",
+    hosts: ["mk18","scar","r308"],
+    traits: { quiet: 4, lowbp: 5, light: 5, value: 2, durable: 5 },
+    useFit: { range: 4, hunt: 4, tactical: 5, precision: 3 }
+  },
+  {
+    brand: "SIG Sauer", model: "HEXIUM 762 Ti", camp: "flow",
+    mount: "HUB taper direct-thread", mountType: "hub",
+    material: "3D-printed titanium",
+    weight: "11 oz", length: "6.2 in", dia: "1.75 in", fa: "Yes",
+    db: "Low-back-pressure flow-through design. No independent dB testing published yet — launched mid-2025.",
+    dbSource: "none",
+    price: "$899", note: "HUB-compatible; modular end cap.",
+    hosts: ["mk18","scar","r308"],
+    traits: { quiet: 3, lowbp: 5, light: 5, value: 4, durable: 4 },
+    useFit: { range: 4, hunt: 4, tactical: 5, precision: 3 }
+  },
+  {
+    brand: "SilencerCo", model: "Velos LBP", camp: "flow",
+    mount: "HUB / ASR QD", mountType: "hub",
+    material: "Stainless &amp; titanium",
+    weight: "~13.5 oz", length: "~7 in", dia: "1.57 in", fa: "Yes",
+    db: "Purpose-built low-back-pressure can; strong cycling behavior on gas guns. Sound competitive for its class.",
+    dbSource: "claimed",
+    price: "$1,000 – 1,100", note: "Third major flow-through option.",
+    hosts: ["mk18","scar","r308"],
+    traits: { quiet: 3, lowbp: 5, light: 3, value: 3, durable: 4 },
+    useFit: { range: 4, hunt: 3, tactical: 5, precision: 3 }
+  },
+  {
+    brand: "Thunder Beast", model: "Ultra 9 / Magnus", camp: "quiet",
+    mount: "HUB / direct thread", mountType: "hub",
+    material: "Titanium",
+    weight: "~12–17 oz", length: "9 in+", dia: "1.5–1.6 in", fa: "Rated varies",
+    db: "Precision-community gold standard; among the quietest on the bolt .308 in PEW Science data. More back pressure than flow-through on semis.",
+    dbSource: "independent",
+    price: "$1,100 – 1,400", note: "Quietest-first; best on the bolt gun.",
+    hosts: ["r308"],
+    traits: { quiet: 5, lowbp: 2, light: 3, value: 2, durable: 4 },
+    useFit: { range: 3, hunt: 4, tactical: 2, precision: 5 }
+  },
+  {
+    brand: "Dead Air", model: "Nomad 30", camp: "quiet",
+    mount: "HUB (KeyMo / Xeno)", mountType: "hub",
+    material: "Stellite &amp; stainless",
+    weight: "~12 oz", length: "6.6 / 8.2 in", dia: "1.6 in", fa: "Yes",
+    db: "Benchmark do-it-all 30 cal; modest back-pressure increase on non-adjustable gas guns. Interchangeable end caps.",
+    dbSource: "claimed",
+    price: "$900 – 1,000", note: "Strong all-rounder, gas-gun friendly.",
+    hosts: ["r308","scar","mk18"],
+    traits: { quiet: 4, lowbp: 3, light: 4, value: 4, durable: 5 },
+    useFit: { range: 5, hunt: 5, tactical: 4, precision: 4 }
+  },
+  {
+    brand: "SilencerCo", model: "Omega 300", camp: "quiet",
+    mount: "HUB / ASR QD", mountType: "hub",
+    material: "Stainless, titanium, Stellite",
+    weight: "~14 oz", length: "7.1 in", dia: "1.56 in", fa: "Yes",
+    db: "Frequently cited best all-around 30 cal; maker rates .308 to ~134 dB. Versatile .223–.300 WM.",
+    dbSource: "claimed",
+    price: "$850 – 950", note: "Versatile, often best value premium.",
+    hosts: ["r308","mk18"],
+    traits: { quiet: 4, lowbp: 3, light: 3, value: 5, durable: 5 },
+    useFit: { range: 5, hunt: 4, tactical: 4, precision: 4 }
+  },
+  {
+    brand: "Otter Creek Labs", model: "Polonium-30", camp: "value",
+    mount: "HUB 1.375×24", mountType: "hub",
+    material: "17-4 stainless, welded",
+    weight: "13.9 oz", length: "5.8 in", dia: "1.625 in", fa: "Yes",
+    db: "Stayed under 140 dBA peak on PEW/PRB .308 testing (bare muzzle 148 dBA avg); standout for its short size class.",
+    dbSource: "independent",
+    price: "$650 – 750", note: "Best value; real independent data.",
+    hosts: ["r308","mk18"],
+    traits: { quiet: 4, lowbp: 3, light: 4, value: 5, durable: 4 },
+    useFit: { range: 5, hunt: 4, tactical: 4, precision: 3 }
+  },
+  {
+    brand: "SilencerCo", model: "Harvester Evo", camp: "value",
+    mount: "HUB / ASR QD", mountType: "hub",
+    material: "Cobalt-6, stainless, aluminum",
+    weight: "10.8 oz", length: "6.2 in", dia: "1.5 in", fa: "No (hunting)",
+    db: "Lightweight hunting-oriented; maker rates .300 WM to ~136.8 dB. Built for first-shot, not sustained fire.",
+    dbSource: "claimed",
+    price: "$750 – 850", note: "Lightest; hunting / .308 only.",
+    hosts: ["r308"],
+    traits: { quiet: 3, lowbp: 3, light: 5, value: 5, durable: 2 },
+    useFit: { range: 3, hunt: 5, tactical: 2, precision: 3 }
+  },
+  {
+    brand: "Witt Machine", model: "Dirty 30", camp: "budget",
+    mount: "Direct thread 5/8×24", mountType: "dt",
+    material: "416 stainless",
+    weight: "13.8 oz", length: "~4 in", dia: "1.625 in", fa: "Yes",
+    db: "No independent or published dB data. Very compact (~4 in), so expect more sound than full-size cans. Rated for fixed-barrel hosts including semi-auto rifles; not for tilting-barrel pistols (no booster).",
+    dbSource: "none",
+    price: "$495 – 595", note: "Shortest option; direct-thread only.",
+    hosts: ["mk18","scar","r308"],
+    traits: { quiet: 2, lowbp: 3, light: 4, value: 5, durable: 3 },
+    useFit: { range: 4, hunt: 4, tactical: 3, precision: 3 }
+  },
+  {
+    brand: "Tuna Cans", model: "30 Cal (L / XL)", camp: "budget",
+    mount: "HUB / standard TPI", mountType: "hub",
+    material: "Heat-treated 17-4 stainless",
+    weight: "16–20 oz", length: "6.24 – 7.76 in", dia: "1.6 in", fa: "Yes",
+    db: "No independent or published dB data. Serviceable threaded baffle stack; HUB-compatible. Heavier, but tough and cleanable. Value-first, not a benchmark for quietness.",
+    dbSource: "none",
+    price: "$399 – 499", note: "Serviceable stack; HUB mount.",
+    hosts: ["mk18","scar","r308"],
+    traits: { quiet: 3, lowbp: 3, light: 2, value: 5, durable: 4 },
+    useFit: { range: 5, hunt: 4, tactical: 3, precision: 3 }
+  }
+];
+
+const CAMPS = [
+  { id: "flow", tag: "Back-pressure first", title: "Flow-through / low back pressure",
+    note: "Best day-to-day on gas guns like the SCAR 17 and direct-impingement MK18, where gas-to-face and cycling violence are the real complaints. Gives up a hair of raw quietness for a much cleaner shooting experience." },
+  { id: "quiet", tag: "Quietness first", title: "Conventional baffle — maximum suppression",
+    note: "Best where you want the lowest possible signature and back pressure matters less, like a bolt .308. Livable on semis, but expect more blowback than the flow-through cans." },
+  { id: "value", tag: "Value first", title: "Best performance per dollar",
+    note: "Proven cans that punch above their price. Great first-suppressor territory — you give up some flow-through refinement or sustained-fire headroom, not real-world quietness." },
+  { id: "budget", tag: "Budget tier", title: "Lowest cost of entry",
+    note: "Sub-$600 cans from smaller shops. No independent sound data yet, so judge them on price, size, and build rather than a number. Fine first suppressors for a value-focused buyer — just set expectations that these aren't the quietest on the rack. Note the Dirty 30 is direct-thread and suits fixed-barrel hosts (including AR/SCAR/bolt), but not tilting-barrel pistols." }
+];
+
+/* ---------- Finder questions ---------- */
+const QUESTIONS = [
+  {
+    key: "hosts", multi: true,
+    title: "What will you run it on?",
+    help: "Pick every rifle this can needs to fit. This drives caliber and gas behavior.",
+    options: [
+      { val: "mk18", t: "Short-barrel AR (e.g. MK18 / 300 BLK)", d: "Direct-impingement, lots of gas" },
+      { val: "scar", t: "Gas-piston semi-auto (e.g. SCAR 17)", d: "Known for blowback to the face" },
+      { val: "r308", t: "Full-size .308 / 7.62 rifle", d: "Semi-auto or bolt" },
+      { val: "bolt", t: "Mainly a bolt-action precision rifle", d: "Back pressure barely matters" }
+    ]
+  },
+  {
+    key: "priority", multi: false,
+    title: "What matters most to you?",
+    help: "Pick the one thing you'd protect first. We'll weight the result toward it.",
+    options: [
+      { val: "lowbp", t: "Less gas in my face", d: "Cleaner, more comfortable on semi-autos" },
+      { val: "quiet", t: "As quiet as possible", d: "Lowest signature, willing to trade comfort" },
+      { val: "light", t: "Keep it light", d: "Minimal added weight on the muzzle" },
+      { val: "value", t: "Best bang for the buck", d: "Strong performance without overspending" }
+    ]
+  },
+  {
+    key: "use", multi: false,
+    title: "How will you mostly use it?",
+    help: "Your primary use — not the rare exception.",
+    options: [
+      { val: "range", t: "Range &amp; general shooting", d: "Mixed plinking, training, fun" },
+      { val: "tactical", t: "Defensive / hard use", d: "Carbine, duty-style, higher round counts" },
+      { val: "hunt", t: "Hunting", d: "First-shot matters, carried in the field" },
+      { val: "precision", t: "Precision / long range", d: "Bolt gun, accuracy-first" }
+    ]
+  },
+  {
+    key: "budget", multi: false,
+    title: "Where's your budget?",
+    help: "Can price only, before the $200 tax stamp.",
+    options: [
+      { val: "v", t: "Keep it sensible", d: "Best value, roughly under $800" },
+      { val: "m", t: "Mid-range is fine", d: "Around $800–1,100 for the right can" },
+      { val: "h", t: "No real ceiling", d: "Get me the best fit, price aside" }
+    ]
+  }
+];
+
+/* ---------- render: header + filter + camps ---------- */
+document.getElementById("updated").textContent = LAST_UPDATED;
+
+let selected = new Set();
+const hostGrid = document.getElementById("hostGrid");
+HOSTS.forEach(h => {
+  const b = document.createElement("button");
+  b.className = "host-btn"; b.dataset.id = h.id;
+  b.innerHTML = `<span class="check"></span><span class="hname">${h.name}</span><span class="hdesc">${h.desc}</span>`;
+  b.addEventListener("click", () => {
+    selected.has(h.id) ? selected.delete(h.id) : selected.add(h.id);
+    b.classList.toggle("active");
+    document.getElementById("resetBtn").style.display = selected.size ? "block" : "none";
+    render();
+  });
+  hostGrid.appendChild(b);
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  selected.clear();
+  document.querySelectorAll(".host-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("resetBtn").style.display = "none";
+  render();
+});
+
+function fits(s) {
+  if (selected.size === 0) return null;
+  return [...selected].every(h => s.hosts.includes(h));
+}
+
+function card(s) {
+  const fit = fits(s);
+  const campBmap = { flow: "camp-flow-b", quiet: "camp-quiet-b", value: "camp-value-b", budget: "camp-budget-b" };
+  const campLabelMap = { flow: "Flow", quiet: "Quiet", value: "Value", budget: "Budget" };
+  const campB = campBmap[s.camp];
+  const campLabel = campLabelMap[s.camp];
+  const mountBadge = s.mountType === "hub" ? `<span class="badge hub">HUB</span>`
+    : s.mountType === "dt" ? `<span class="badge dt">Direct thread</span>`
+    : `<span class="badge prop">Proprietary</span>`;
+  const srcClass = s.dbSource === "independent" ? "independent" : s.dbSource === "claimed" ? "claimed" : "none";
+  const srcLabel = s.dbSource === "independent" ? "Independent data" : s.dbSource === "claimed" ? "Mfr. claimed" : "No data yet";
+  let cls = "card";
+  if (fit === true) cls += " fit";
+  if (fit === false) cls += " dim";
+  return `
+  <div class="${cls}">
+    <div class="card-top">
+      <span class="brand">${s.brand}</span>
+      <div class="model">${s.model}</div>
+      <div class="badges">
+        ${fit === true ? `<span class="badge fit-badge">Fits your hosts</span>` : ""}
+        <span class="badge ${campB}">${campLabel}</span>
+        ${mountBadge}
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec"><span class="k">Weight</span><span class="v">${s.weight}</span></div>
+      <div class="spec"><span class="k">Length</span><span class="v">${s.length}</span></div>
+      <div class="spec"><span class="k">Diameter</span><span class="v">${s.dia}</span></div>
+      <div class="spec"><span class="k">Material</span><span class="v">${s.material}</span></div>
+      <div class="spec"><span class="k">Mount</span><span class="v">${s.mount}</span></div>
+      <div class="spec"><span class="k">Full-auto</span><span class="v">${s.fa}</span></div>
+    </div>
+    <div class="db-block">
+      <div class="db-label">Sound &amp; back pressure</div>
+      <div class="db-val">${s.db}</div>
+      <span class="src ${srcClass}">${srcLabel}</span>
+    </div>
+    <div class="price-row"><span class="price"><span class="cur">approx. </span>${s.price}</span></div>
+  </div>`;
+}
+
+function render() {
+  document.getElementById("campContainer").innerHTML = CAMPS.map(c => {
+    const items = SUPPRESSORS.filter(s => s.camp === c.id);
+    return `
+    <section class="camp camp-${c.id}">
+      <div class="camp-head"><span class="camp-tag">${c.tag}</span><h3>${c.title}</h3></div>
+      <p class="camp-note">${c.note}</p>
+      <div class="cards">${items.map(card).join("")}</div>
+    </section>`;
+  }).join("");
+}
+render();
+
+/* ---------- Finder engine ---------- */
+const overlay = document.getElementById("overlay");
+const quizEl = document.getElementById("quiz");
+let qIdx = 0;
+let answers = { hosts: [], priority: null, use: null, budget: null };
+
+document.getElementById("openQuiz").addEventListener("click", openQuiz);
+overlay.addEventListener("click", e => { if (e.target === overlay) closeQuiz(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeQuiz(); });
+
+function openQuiz() {
+  qIdx = 0;
+  answers = { hosts: [], priority: null, use: null, budget: null };
+  overlay.classList.add("open");
+  drawQuestion();
+}
+function closeQuiz() { overlay.classList.remove("open"); }
+
+function drawQuestion() {
+  const q = QUESTIONS[qIdx];
+  const cur = answers[q.key];
+  const pct = Math.round((qIdx / QUESTIONS.length) * 100);
+  const opts = q.options.map(o => {
+    const isSel = q.multi ? (cur || []).includes(o.val) : cur === o.val;
+    return `<button class="opt ${isSel ? "sel" : ""}" data-val="${o.val}">
+      <span class="check"></span><span class="ot">${o.t}</span><span class="od">${o.d}</span></button>`;
+  }).join("");
+  const canNext = q.multi ? (cur && cur.length > 0) : !!cur;
+  quizEl.innerHTML = `
+    <div class="quiz-head">
+      <span class="qstep">Step ${qIdx + 1} of ${QUESTIONS.length}</span>
+      <button class="quiz-close" aria-label="Close">×</button>
+    </div>
+    <div class="progress"><span style="width:${pct}%"></span></div>
+    <div class="quiz-body">
+      <h3>${q.title}</h3>
+      <p class="qhelp">${q.help}</p>
+      ${q.multi ? `<div class="multi-hint">Select all that apply</div>` : ""}
+      ${opts}
+    </div>
+    <div class="quiz-foot">
+      <button class="qbtn ghost" data-act="back">${qIdx === 0 ? "Cancel" : "← Back"}</button>
+      <button class="qbtn prime" data-act="next" ${canNext ? "" : "disabled"}>
+        ${qIdx === QUESTIONS.length - 1 ? "See my match" : "Next →"}</button>
+    </div>`;
+  quizEl.querySelector(".quiz-close").addEventListener("click", closeQuiz);
+  quizEl.querySelectorAll(".opt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const v = btn.dataset.val;
+      if (q.multi) {
+        const arr = answers[q.key] || [];
+        answers[q.key] = arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
+      } else {
+        answers[q.key] = v;
+      }
+      drawQuestion();
+    });
+  });
+  quizEl.querySelector('[data-act="back"]').addEventListener("click", () => {
+    if (qIdx === 0) return closeQuiz();
+    qIdx--; drawQuestion();
+  });
+  quizEl.querySelector('[data-act="next"]').addEventListener("click", () => {
+    if (qIdx === QUESTIONS.length - 1) return showResult();
+    qIdx++; drawQuestion();
+  });
+}
+
+function scoreAll() {
+  const a = answers;
+  const semiSelected = a.hosts.includes("mk18") || a.hosts.includes("scar") ||
+    (a.hosts.includes("r308") && a.use !== "precision");
+  const boltOnly = a.hosts.includes("bolt") && !a.hosts.includes("mk18") &&
+    !a.hosts.includes("scar") && !a.hosts.includes("r308");
+
+  return SUPPRESSORS.map(s => {
+    let score = 0;
+    const t = s.traits;
+
+    // priority weighting (the big lever)
+    if (a.priority && t[a.priority] != null) score += t[a.priority] * 4;
+
+    // use-case fit
+    if (a.use && s.useFit[a.use] != null) score += s.useFit[a.use] * 2.5;
+
+    // host gas behavior: reward low back pressure when a gas gun is in the mix
+    if (semiSelected) score += t.lowbp * 2.2;
+    // bolt-only: reward raw quietness, back pressure irrelevant
+    if (boltOnly) score += t.quiet * 2.5;
+
+    // budget alignment
+    const lowPrice = parseInt(s.price.replace(/[^0-9]/g, "").slice(0, 3), 10);
+    if (a.budget === "v") score += lowPrice < 800 ? 8 : lowPrice < 1000 ? 2 : -4;
+    else if (a.budget === "m") score += (lowPrice >= 800 && lowPrice <= 1150) ? 6 : 1;
+    else if (a.budget === "h") score += t.quiet + t.lowbp; // chase performance
+
+    // gentle nudge: independent data is reassuring for a first-timer
+    if (s.dbSource === "independent") score += 2;
+
+    // penalize hunting-only/no-FA cans when hard use is the goal
+    if (a.use === "tactical" && s.fa.startsWith("No")) score -= 8;
+
+    return { s, score };
+  }).sort((x, y) => y.score - x.score);
+}
+
+function reasonFor(s, a) {
+  const bits = [];
+  const semi = a.hosts.includes("mk18") || a.hosts.includes("scar");
+  if (semi && s.traits.lowbp >= 4) bits.push("keeps gas and blowback down on your semi-auto hosts");
+  if (a.priority === "quiet" && s.traits.quiet >= 4) bits.push("among the quietest in this group");
+  if (a.priority === "light" && s.traits.light >= 4) bits.push("one of the lightest options here");
+  if (a.priority === "value" && s.traits.value >= 4) bits.push("strong performance for the price");
+  if (a.use === "hunt" && s.useFit.hunt >= 4) bits.push("well suited to carrying and first-shot hunting");
+  if (a.use === "precision" && s.useFit.precision >= 4) bits.push("a precision-shooter favorite");
+  if (s.mountType === "hub") bits.push("HUB mount so it moves easily between rifles");
+  if (s.dbSource === "independent") bits.push("backed by independent lab data");
+  if (bits.length === 0) bits.push("a solid all-around match for what you told us");
+  // de-dupe & cap
+  return bits.slice(0, 3).join(", ") + ".";
+}
+
+function showResult() {
+  const ranked = scoreAll();
+  const top = ranked[0].s;
+  const runners = ranked.slice(1, 3).map(r => r.s);
+  const a = answers;
+  const reason = reasonFor(top, a);
+  const cap = reason.charAt(0).toUpperCase() + reason.slice(1);
+
+  quizEl.innerHTML = `
+    <div class="quiz-head">
+      <span class="qstep">Your match</span>
+      <button class="quiz-close" aria-label="Close">×</button>
+    </div>
+    <div class="progress"><span style="width:100%"></span></div>
+    <div class="result">
+      <div class="rlabel">Best fit for your answers</div>
+      <div class="rec-card">
+        <div class="rec-top">
+          <div class="rbrand">${top.brand}</div>
+          <div class="rmodel">${top.model}</div>
+          <div class="rprice">approx. ${top.price} · ${top.mountType === "hub" ? "HUB mount" : top.mountType === "dt" ? "direct thread" : "proprietary mount"}</div>
+        </div>
+        <div class="rec-why">
+          <div class="wt">Why this one</div>
+          ${cap}
+        </div>
+      </div>
+      <div class="rlabel">Also worth a look</div>
+      ${runners.map(r => `<div class="runner"><b>${r.brand} ${r.model}</b> — ${r.note} <span style="color:var(--steel)">(${r.price})</span></div>`).join("")}
+      <div class="result-actions">
+        <button class="qbtn ghost" data-act="restart">Start over</button>
+        <a class="qbtn prime" style="text-decoration:none;" href="mailto:sales@desiarms.com?subject=${encodeURIComponent('Suppressor inquiry — ' + top.model)}">Ask us about the ${top.model}</a>
+      </div>
+      <p style="font-size:11.5px;color:var(--steel);margin-top:14px;line-height:1.5;">
+        This is a starting point, not gospel — your barrel length, threads, and how you actually shoot all matter.
+        Bring it by and we'll confirm the right fit and handle the paperwork.
+      </p>
+    </div>`;
+  quizEl.querySelector(".quiz-close").addEventListener("click", closeQuiz);
+  quizEl.querySelector('[data-act="restart"]').addEventListener("click", openQuiz);
+}
+</script>
+
+</body>
+</html>
