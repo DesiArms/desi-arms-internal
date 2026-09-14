@@ -6,7 +6,35 @@
 <title>Laser Library — Desi Arms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<!-- ═══ ACCESS GATE ═══
+     Reuses the dashboard's session. No password is stored on this page.
+     Not signed in -> bounced to index.html to log in. -->
+<style id="gateStyle">body{visibility:hidden}</style>
+<script>
+(function(){
+  var AUTH_KEY = 'da_auth', EXP_KEY = 'da_auth_exp', ok = false;
+  try {
+    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+      ok = true;
+    } else {
+      var exp = localStorage.getItem(EXP_KEY);
+      if (localStorage.getItem(AUTH_KEY) === '1' && exp && Date.now() < parseInt(exp)) {
+        sessionStorage.setItem(AUTH_KEY, '1');
+        ok = true;
+      }
+    }
+  } catch (e) { ok = false; }
+
+  if (ok) {
+    var s = document.getElementById('gateStyle');
+    if (s) s.parentNode.removeChild(s);
+  } else {
+    location.replace('index.html');
+  }
+})();
+</script>
 <style>
 :root{
   --primary:#1a2a3a;
@@ -20,11 +48,11 @@
   --queued:#6b7480;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.5}
+body{margin:0;background:var(--bg);color:var(--primary);font-family:'Barlow',system-ui,sans-serif;line-height:1.5}
 .wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
 
 header{text-align:center;padding:12px 0 20px;border-bottom:2px solid var(--primary)}
-header .logo{height:56px;width:auto}
+header .logo{height:56px;width:auto;mix-blend-mode:multiply}
 header h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;letter-spacing:.02em;margin:10px 0 2px;text-transform:uppercase}
 header .sub{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--muted)}
 nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
@@ -33,7 +61,7 @@ nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
 
 .controls{margin:24px 0 6px}
 .controls input{
-  width:100%;font-family:'DM Sans',sans-serif;font-size:.95rem;
+  width:100%;font-family:'Barlow',sans-serif;font-size:.95rem;
   padding:9px 12px;border:1px solid var(--line);border-radius:3px;background:var(--card);color:var(--primary);
 }
 .controls input:focus{outline:2px solid var(--accent);outline-offset:1px}
@@ -78,7 +106,7 @@ nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
 .ref .card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:18px 20px}
 .ref ul{margin:0;padding-left:19px;font-size:.92rem}
 .ref li{margin:5px 0}
-.ref h3{font-family:'DM Sans',sans-serif;font-size:.95rem;margin:14px 0 4px}
+.ref h3{font-family:'Barlow',sans-serif;font-size:.95rem;margin:14px 0 4px}
 .ref h3:first-child{margin-top:0}
 .ref table{width:100%;border-collapse:collapse;font-size:.88rem}
 .ref th,.ref td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -108,14 +136,16 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
 <div class="wrap">
 
 <header>
-  <img class="logo" src="logo.svg" alt="Desi Arms" onerror="this.onerror=null;this.src='logo.png';">
+  <img class="logo" src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg"
+       onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'"
+       alt="Desi Arms">
   <h1>Laser Library</h1>
   <div class="sub">JPT 50W fiber &middot; LightBurn &middot; 70 / 175 / 210 mm</div>
   <nav>
     <a href="index.html">Dashboard</a>
     <a href="staff-schedule.html">Staff Schedule</a>
-    <a href="task-manager.html">Task Manager</a>
-    <a href="time-tracker.html">Time Tracker</a>
+    <a href="desi-arms-task-list.html">Task Manager</a>
+    <a href="desi-arms-time-tracker.html">Time Tracker</a>
   </nav>
 </header>
 
