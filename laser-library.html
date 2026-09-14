@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laser Library — Desi Arms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#1a2a3a;
+  --accent:#D32434;
+  --bg:#f5f2ed;
+  --card:#ffffff;
+  --line:#d9d3c9;
+  --muted:#6b7480;
+  --proven:#2f6f4f;
+  --testing:#b7791f;
+  --queued:#6b7480;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.5}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
+
+header{text-align:center;padding:12px 0 20px;border-bottom:2px solid var(--primary)}
+header .logo{height:56px;width:auto}
+header h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;letter-spacing:.02em;margin:10px 0 2px;text-transform:uppercase}
+header .sub{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--muted)}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
+nav a{font-family:'Share Tech Mono',monospace;font-size:.78rem;text-decoration:none;color:var(--primary);border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:3px}
+nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
+
+.controls{margin:24px 0 6px}
+.controls input{
+  width:100%;font-family:'DM Sans',sans-serif;font-size:.95rem;
+  padding:9px 12px;border:1px solid var(--line);border-radius:3px;background:var(--card);color:var(--primary);
+}
+.controls input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.filterrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.filterrow .lbl{font-family:'Share Tech Mono',monospace;font-size:.66rem;color:var(--muted);min-width:52px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{
+  font-family:'Share Tech Mono',monospace;font-size:.74rem;
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+  padding:7px 13px;border-radius:3px;cursor:pointer;
+}
+.filters button[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--bg)}
+.filters button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);margin:12px 0 0}
+
+.entry{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:18px 20px;margin:14px 0}
+.entry.proven{border-left:4px solid var(--proven)}
+.entry.testing{border-left:4px solid var(--testing)}
+.entry.queued{border-left:4px solid var(--queued);opacity:.92}
+.entry h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.45rem;letter-spacing:.02em;margin:0;text-transform:uppercase;display:inline-block}
+.status{font-family:'Share Tech Mono',monospace;font-size:.64rem;color:#fff;padding:3px 8px;border-radius:2px;margin-left:10px;vertical-align:3px}
+.status.proven{background:var(--proven)}
+.status.testing{background:var(--testing)}
+.status.queued{background:var(--queued)}
+.entry .sub{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);margin:4px 0 12px}
+
+.params{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.param{flex:1 1 100px;padding:9px 12px;border-right:1px solid var(--line);background:#fbfaf8}
+.param.lens{background:#f2f7fa}
+.param:last-child{border-right:none}
+.param .k{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted);display:block}
+.param .v{font-family:'Share Tech Mono',monospace;font-size:.92rem;font-weight:400}
+.param .v.none{color:var(--muted)}
+.param .v.unknown{color:var(--accent)}
+
+.entry ul{margin:0;padding-left:19px;font-size:.9rem}
+.entry li{margin:4px 0}
+.warn{background:#fdf6f6;border-left:3px solid var(--accent);padding:9px 13px;margin-top:11px;font-size:.88rem}
+
+.ref{margin-top:36px}
+.ref h2{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-size:1.5rem;margin:0 0 10px}
+.ref .card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:18px 20px}
+.ref ul{margin:0;padding-left:19px;font-size:.92rem}
+.ref li{margin:5px 0}
+.ref h3{font-family:'DM Sans',sans-serif;font-size:.95rem;margin:14px 0 4px}
+.ref h3:first-child{margin-top:0}
+.ref table{width:100%;border-collapse:collapse;font-size:.88rem}
+.ref th,.ref td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.ref th{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--muted);font-weight:400}
+.ref td.mono{font-family:'Share Tech Mono',monospace;font-size:.84rem}
+.ref .flag{background:#fdf6f6;border-left:3px solid var(--accent);padding:10px 14px;margin-top:14px;font-size:.9rem}
+
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:4px;padding:28px;text-align:center;font-size:.95rem;color:var(--muted)}
+footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center}
+
+@media (max-width:600px){
+  .param{flex:1 1 50%;border-bottom:1px solid var(--line)}
+  header h1{font-size:1.9rem}
+  .ref table,.ref thead,.ref tbody,.ref th,.ref td,.ref tr{display:block}
+  .ref thead{display:none}
+  .ref td{border:none;padding:3px 0}
+  .ref tbody tr{border-bottom:1px solid var(--line);padding:10px 0}
+}
+@media print{
+  body{background:#fff}
+  nav,.controls{display:none}
+  .entry{break-inside:avoid;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <img class="logo" src="logo.svg" alt="Desi Arms" onerror="this.onerror=null;this.src='logo.png';">
+  <h1>Laser Library</h1>
+  <div class="sub">JPT 50W fiber &middot; LightBurn &middot; 70 / 175 / 210 mm</div>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="staff-schedule.html">Staff Schedule</a>
+    <a href="task-manager.html">Task Manager</a>
+    <a href="time-tracker.html">Time Tracker</a>
+  </nav>
+</header>
+
+<div class="controls">
+  <input id="search" type="search" placeholder="Search material, e.g. PMAG or aluminum" aria-label="Search materials">
+  <div class="filterrow">
+    <span class="lbl">Status</span>
+    <div class="filters" id="statusFilters">
+      <button data-f="all" aria-pressed="true">All</button>
+      <button data-f="proven" aria-pressed="false">Proven</button>
+      <button data-f="testing" aria-pressed="false">Testing</button>
+      <button data-f="queued" aria-pressed="false">Queued</button>
+    </div>
+  </div>
+  <div class="filterrow">
+    <span class="lbl">Lens</span>
+    <div class="filters" id="lensFilters">
+      <button data-l="all" aria-pressed="true">All</button>
+      <button data-l="70" aria-pressed="false">70 mm</button>
+      <button data-l="175" aria-pressed="false">175 mm</button>
+      <button data-l="210" aria-pressed="false">210 mm</button>
+    </div>
+  </div>
+</div>
+<div class="count" id="count"></div>
+
+<div id="list"></div>
+
+<section class="ref">
+  <h2>Lenses</h2>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Lens</th><th>Field (approx)</th><th>Spot (approx)</th><th>Use it for</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">70 mm</td>
+          <td class="mono">50 &times; 50</td>
+          <td class="mono">~20 &micro;m</td>
+          <td>Finest detail and deepest ablation. Knife ricassos, serial numbers, small logos, anything where a 0.3 mm stroke has to stay crisp.</td>
+        </tr>
+        <tr>
+          <td class="mono">175 mm</td>
+          <td class="mono">110 &times; 110</td>
+          <td class="mono">~50 &micro;m</td>
+          <td>General workhorse. Magazine panels, receiver flats, most customer logo work.</td>
+        </tr>
+        <tr>
+          <td class="mono">210 mm</td>
+          <td class="mono">145 &times; 145</td>
+          <td class="mono">~65 &micro;m</td>
+          <td>Large single-pass work. Full-length magazine bodies, long receivers, anything that would otherwise need repositioning.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="flag"><strong>Field and spot figures are typical, not measured.</strong> Verify against your own lens correction files before relying on them for layout.</div>
+  </div>
+</section>
+
+<section class="ref">
+  <h2>Moving a recipe between lenses</h2>
+  <div class="card">
+    <p style="font-size:.92rem;margin:0 0 10px">Settings do not transfer. A longer lens spreads the same 50 W over a wider spot, so power density drops — the same numbers that cut clean at 70 mm will look weak at 210 mm.</p>
+    <ul>
+      <li>Treat each lens as a separate recipe. Same material on two lenses means two entries.</li>
+      <li>Going to a longer lens, the mark gets lighter. Slow the speed first, one step at a time, before touching power.</li>
+      <li>Going to a shorter lens, the mark gets hotter. Speed up first — on polymer, too much density melts instead of marks.</li>
+      <li>Hold frequency where the proven recipe had it. It's the last thing to change, not the first.</li>
+      <li>Re-focus and load the matching lens correction file after every swap. A recipe run on the wrong correction file isn't the recipe.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="ref">
+  <h2>Holding the part</h2>
+  <div class="card">
+    <ul>
+      <li>Line the part up off a flat, solid spot — the spine of a blade, the flat end of a magazine. Never a curved edge or a tip, because those are never the same twice.</li>
+      <li>Set your focus from the surface you're marking, not from the table underneath it.</li>
+      <li>The holder has to sit in the same place on the bed every time. Use locating pins or push it into a hard corner.</li>
+      <li>For magazines: flat end of the baseplate against the stop, one flat side against the edge. Same way every time.</li>
+      <li>When you change lenses, the part sits a different distance from the laser. Re-check your focus after every swap.</li>
+      <li>If the same job keeps coming back, 3D print a holder the part drops into. It'll save you the setup every time.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="ref">
+  <h2>Working out new settings</h2>
+  <div class="card">
+    <h3>While you're testing</h3>
+    <ul>
+      <li>Write down which lens you're on before anything else. Without that, the numbers are useless to whoever reads them next.</li>
+      <li>Change one thing at a time. If you change two and it looks better, you don't know which one did it.</li>
+      <li>Speed is usually what you adjust first. Leave frequency alone until speed and power are sorted out.</li>
+      <li>Settings that work on red plastic won't work on black. Every color gets its own entry.</li>
+      <li>Test on scrap that's in the same condition as the real thing. If the real one ships heat-treated and etched, test on one that is too.</li>
+    </ul>
+    <h3>Before you mark it "Proven"</h3>
+    <ul>
+      <li>Get the same result three times, on three separate pieces. Once isn't proof.</li>
+      <li>Write down the exact numbers, the lens, and how the artwork was set up. Someone should be able to repeat it without asking you.</li>
+      <li>Add it to the <code>RECIPES</code> list at the top of this page's code. That list is what this page is built from.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>Desi Arms internal &middot; settings are machine- and lens-specific and do not transfer</footer>
+
+</div>
+
+<script>
+/* ─── SOURCE OF TRUTH ─────────────────────────────────────────────
+   status: 'proven' | 'testing' | 'queued'
+   lens:   '70' | '175' | '210' | null  (null = not yet recorded)
+   Leave a param null when it doesn't apply or isn't determined yet.
+─────────────────────────────────────────────────────────────────── */
+const RECIPES = [
+  {
+    material: "PMAG Gen M3, red polymer",
+    status: "proven",
+    lens: null,
+    result: "Dark gray mark",
+    speed: "1000 mm/s", power: "30%", freq: "30 kHz", pulse: null, passes: "1",
+    notes: [
+      "Scan on tool layer T1. Rotary mode off.",
+      "Datum: baseplate face plus one spine edge.",
+      "Artwork: TIFF at 600 dpi, pen-tool redrawn over a locked scan layer.",
+      "Red polymer is inconsistent batch to batch — check the first piece of every new lot."
+    ],
+    warn: "Lens not recorded. Confirm which lens this was developed on before anyone runs it — the numbers are only valid on that one."
+  },
+  {
+    material: "Anodized aluminum, Henry receivers",
+    status: "proven",
+    lens: null,
+    result: "Clean mark on anodize",
+    speed: "steel preset", power: "steel preset", freq: "steel preset", pulse: null, passes: "1",
+    notes: [
+      "Use the existing steel engraving presets. Results confirmed.",
+      "Annealing is not appropriate on anodized aluminum.",
+      "Finish with Renaissance Wax. Gun oil is acceptable."
+    ],
+    warn: "Lens not recorded. Receiver length suggests 175 or 210 — confirm before reuse."
+  },
+  {
+    material: "Steel, cleaning pass",
+    status: "proven",
+    lens: null,
+    result: "Established baseline",
+    speed: "3000 mm/s", power: "20%", freq: "100 kHz", pulse: "100 ns", passes: "1",
+    notes: [
+      "This is the baseline other steel recipes start from, not a finished mark on its own."
+    ],
+    warn: "Lens not recorded. Everything derived from this baseline inherits the gap — worth pinning down first."
+  },
+  {
+    material: "Damascus, 1095/15N20 pattern-welded",
+    status: "testing",
+    lens: "70",
+    result: "Bright ablation only",
+    speed: "from 3000 mm/s", power: "vary", freq: "100 kHz", pulse: "100 ns", passes: "vary",
+    notes: [
+      "Dark anneal is invisible against etched oxide on the 1095 bands. Bright ablation is the only usable mark.",
+      "Start from the steel cleaning-pass recipe. Pin frequency at 100 kHz, then vary power and passes one at a time.",
+      "70 mm lens: the mark lands at 15–25 mm on the ricasso and the thinnest stroke has to hold 0.3 mm. The short lens is what makes that achievable.",
+      "Keep passes fast with cooling between them.",
+      "Mark placement: ricasso, spine, or flat. Never bevel or edge.",
+      "Degrease with IPA before. Oil or Renaissance Wax immediately after — zero chromium means it will rust.",
+      "No re-etch after marking.",
+      "If a dark logo on etched steel is ever required, use the two-stage workflow: ablate a patch first, then mark inside the cleared area."
+    ],
+    warn: "Blade temper is about 400°F. Blocked until test blanks arrive. Production stock has no margin for a learning pass — Glenn only. Note the steel baseline was developed on an unconfirmed lens, so expect to re-dial rather than transfer."
+  },
+  {
+    material: "PMAG, black polymer",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Red PMAG settings will not transfer. Develop from scratch, speed first."],
+    warn: null
+  },
+  {
+    material: "PMAG Gen M2",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Confirm the Gen M3 datum still holds before reusing the fixture."],
+    warn: null
+  },
+  {
+    material: "Amend2 magazines",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: [], warn: null
+  },
+  {
+    material: "MFT magazines",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: [], warn: null
+  },
+  {
+    material: "20-round magazines",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Shorter body — fixture needs its own stop.", "Likely fits the 175 field in one shot."],
+    warn: null
+  },
+  {
+    material: "AR10 magazines",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Long, curved body. A 210 candidate if you want it in one pass."],
+    warn: null
+  },
+  {
+    material: "Pistol magazines",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Curved bodies. Fixturing is the hard part, not the settings."],
+    warn: null
+  },
+  {
+    material: "Stainless steel",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Start from the steel cleaning pass, on whichever lens that baseline turns out to belong to."],
+    warn: null
+  },
+  {
+    material: "Titanium",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: ["Color annealing is frequency-driven — worth a dedicated test session with a frequency sweep."],
+    warn: null
+  },
+  {
+    material: "Brass",
+    status: "queued", lens: null, result: null,
+    speed: null, power: null, freq: null, pulse: null, passes: null,
+    notes: [], warn: null
+  }
+];
+
+/* ─── RENDER ─────────────────────────────────────────────────── */
+const list = document.getElementById('list');
+const count = document.getElementById('count');
+const search = document.getElementById('search');
+const statusFilters = document.getElementById('statusFilters');
+const lensFilters = document.getElementById('lensFilters');
+let activeStatus = 'all';
+let activeLens = 'all';
+
+const LABEL = { proven:'Proven', testing:'In testing', queued:'Not tested' };
+
+function param(k, v, cls){
+  const empty = !v;
+  return '<div class="param' + (cls ? ' ' + cls : '') + '"><span class="k">' + k + '</span>' +
+         '<span class="v' + (empty ? ' none' : '') + '">' + (empty ? '—' : v) + '</span></div>';
+}
+
+function lensParam(lens){
+  if (lens) return '<div class="param lens"><span class="k">Lens</span><span class="v">' + lens + ' mm</span></div>';
+  return '<div class="param lens"><span class="k">Lens</span><span class="v unknown">not recorded</span></div>';
+}
+
+function render(){
+  const q = search.value.trim().toLowerCase();
+  const shown = RECIPES.filter(r =>
+    (activeStatus === 'all' || r.status === activeStatus) &&
+    (activeLens === 'all' || r.lens === activeLens) &&
+    (!q || r.material.toLowerCase().includes(q))
+  );
+
+  if (!shown.length){
+    list.innerHTML = '<div class="empty">Nothing matches. Clear the search or widen the filters. Most entries have no lens recorded yet, so filtering by lens will hide them.</div>';
+    count.textContent = '';
+    return;
+  }
+
+  list.innerHTML = shown.map(r => {
+    const notes = r.notes.length
+      ? '<ul>' + r.notes.map(n => '<li>' + n + '</li>').join('') + '</ul>'
+      : '<p style="font-size:.9rem;color:var(--muted);margin:0">No settings developed yet.</p>';
+    const warn = r.warn ? '<div class="warn">' + r.warn + '</div>' : '';
+    return '<article class="entry ' + r.status + '">' +
+      '<h2>' + r.material + '</h2>' +
+      '<span class="status ' + r.status + '">' + LABEL[r.status] + '</span>' +
+      '<div class="sub">' + (r.result || 'Awaiting development') + '</div>' +
+      '<div class="params">' +
+        lensParam(r.lens) +
+        param('Speed', r.speed) + param('Power', r.power) + param('Frequency', r.freq) +
+        param('Pulse', r.pulse) + param('Passes', r.passes) +
+      '</div>' + notes + warn +
+    '</article>';
+  }).join('');
+
+  count.textContent = shown.length + ' of ' + RECIPES.length + ' materials';
+}
+
+function wire(el, key){
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const val = b.dataset[key];
+    if (key === 'f') activeStatus = val; else activeLens = val;
+    Array.from(el.children).forEach(x => x.setAttribute('aria-pressed', String(x.dataset[key] === val)));
+    render();
+  });
+}
+wire(statusFilters, 'f');
+wire(lensFilters, 'l');
+search.addEventListener('input', render);
+render();
+</script>
+</body>
+</html>
