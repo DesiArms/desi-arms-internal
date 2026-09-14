@@ -6,7 +6,35 @@
 <title>Staff Schedule — Desi Arms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<!-- ═══ ACCESS GATE ═══
+     Reuses the dashboard's session. No password is stored on this page.
+     Not signed in -> bounced to index.html to log in. -->
+<style id="gateStyle">body{visibility:hidden}</style>
+<script>
+(function(){
+  var AUTH_KEY = 'da_auth', EXP_KEY = 'da_auth_exp', ok = false;
+  try {
+    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+      ok = true;
+    } else {
+      var exp = localStorage.getItem(EXP_KEY);
+      if (localStorage.getItem(AUTH_KEY) === '1' && exp && Date.now() < parseInt(exp)) {
+        sessionStorage.setItem(AUTH_KEY, '1');
+        ok = true;
+      }
+    }
+  } catch (e) { ok = false; }
+
+  if (ok) {
+    var s = document.getElementById('gateStyle');
+    if (s) s.parentNode.removeChild(s);
+  } else {
+    location.replace('index.html');
+  }
+})();
+</script>
 <style>
 :root{
   --primary:#1a2a3a;
@@ -18,11 +46,11 @@
   --project:#2f5d7a;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.55}
+body{margin:0;background:var(--bg);color:var(--primary);font-family:'Barlow',system-ui,sans-serif;line-height:1.55}
 .wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
 
 header{text-align:center;padding:12px 0 20px;border-bottom:2px solid var(--primary)}
-header .logo{height:56px;width:auto}
+header .logo{height:56px;width:auto;mix-blend-mode:multiply}
 header h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;letter-spacing:.02em;margin:10px 0 2px;text-transform:uppercase}
 header .sub{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--muted)}
 nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
@@ -45,7 +73,7 @@ nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
 .badge.blue{background:var(--project)}
 
 .block{margin:16px 0 0}
-.block h3{font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;margin:0 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.block h3{font-family:'Barlow',sans-serif;font-weight:700;font-size:.95rem;margin:0 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
 .block ul{margin:8px 0 0;padding-left:20px}
 .block li{margin:6px 0}
 .block .time{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);font-weight:400;float:right}
@@ -98,13 +126,15 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
 <div class="wrap">
 
 <header>
-  <img class="logo" src="logo.svg" alt="Desi Arms" onerror="this.onerror=null;this.src='logo.png';">
+  <img class="logo" src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg"
+       onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'"
+       alt="Desi Arms">
   <h1>Staff Schedule</h1>
   <div class="sub" id="stamp">What to work on, day by day</div>
   <nav>
     <a href="index.html">Dashboard</a>
-    <a href="task-manager.html">Task Manager</a>
-    <a href="time-tracker.html">Time Tracker</a>
+    <a href="desi-arms-task-list.html">Task Manager</a>
+    <a href="desi-arms-time-tracker.html">Time Tracker</a>
     <a href="laser-library.html">Laser Library</a>
   </nav>
 </header>
@@ -144,8 +174,8 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
     </ul>
   </div>
   <div class="actions">
-    <a class="btn-solid" href="time-tracker.html">Clock in</a>
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-solid" href="desi-arms-time-tracker.html">Clock in</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
   </div>
 </section>
 
@@ -187,8 +217,8 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   </div>
 
   <div class="actions">
-    <a class="btn-solid" href="time-tracker.html">Log time</a>
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-solid" href="desi-arms-time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
   </div>
 </section>
 
@@ -219,8 +249,8 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   </div>
 
   <div class="actions">
-    <a class="btn-solid" href="time-tracker.html">Log time</a>
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-solid" href="desi-arms-time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
     <a class="btn-ghost" href="laser-library.html">Laser Library</a>
   </div>
 </section>
@@ -264,8 +294,8 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   </div>
 
   <div class="actions">
-    <a class="btn-solid" href="time-tracker.html">Log time</a>
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-solid" href="desi-arms-time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
   </div>
 </section>
 
@@ -299,8 +329,8 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   </div>
 
   <div class="actions">
-    <a class="btn-solid" href="time-tracker.html">Log time</a>
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-solid" href="desi-arms-time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
     <a class="btn-ghost" href="laser-library.html">Laser Library</a>
   </div>
 </section>
@@ -335,8 +365,8 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   </div>
 
   <div class="actions">
-    <a class="btn-solid" href="time-tracker.html">Log time</a>
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-solid" href="desi-arms-time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
   </div>
 </section>
 
@@ -367,7 +397,7 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   </ol>
   <div class="note blue"><strong>One at a time.</strong> Each step has a decision attached to it. Starting the next one early usually means redoing it.</div>
   <div class="actions">
-    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-ghost" href="desi-arms-task-list.html">Open tasks</a>
   </div>
 </section>
 
