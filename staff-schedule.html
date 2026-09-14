@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff Schedule — Desi Arms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#1a2a3a;
+  --accent:#D32434;
+  --bg:#f5f2ed;
+  --card:#ffffff;
+  --line:#d9d3c9;
+  --muted:#6b7480;
+  --project:#2f5d7a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
+
+header{text-align:center;padding:12px 0 20px;border-bottom:2px solid var(--primary)}
+header .logo{height:56px;width:auto}
+header h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;letter-spacing:.02em;margin:10px 0 2px;text-transform:uppercase}
+header .sub{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--muted)}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
+nav a{font-family:'Share Tech Mono',monospace;font-size:.78rem;text-decoration:none;color:var(--primary);border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:3px}
+nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
+
+.rail{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:22px 0 10px}
+.rail button{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 16px;border-radius:3px;cursor:pointer}
+.rail button[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--bg)}
+.rail button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px 22px;margin:16px 0}
+.card.anchor{border-left:4px solid var(--primary)}
+.card.day{border-left:4px solid var(--accent)}
+.card.project{border-left:4px solid var(--project)}
+.card.today{box-shadow:0 0 0 2px var(--accent)}
+.card h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;letter-spacing:.02em;margin:0 0 2px;text-transform:uppercase}
+.card .theme{font-family:'Share Tech Mono',monospace;font-size:.76rem;color:var(--muted);margin-bottom:14px}
+.badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:.66rem;background:var(--accent);color:#fff;padding:2px 7px;border-radius:2px;vertical-align:middle;margin-left:8px}
+.badge.blue{background:var(--project)}
+
+.block{margin:16px 0 0}
+.block h3{font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;margin:0 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.block ul{margin:8px 0 0;padding-left:20px}
+.block li{margin:6px 0}
+.block .time{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);font-weight:400;float:right}
+
+.note{background:#fdf6f6;border-left:3px solid var(--accent);padding:10px 14px;margin:12px 0 0;font-size:.9rem}
+.note.blue{background:#f2f7fa;border-left-color:var(--project)}
+.note strong{font-weight:700}
+
+ol.seq{counter-reset:step;list-style:none;padding:0;margin:8px 0 0}
+ol.seq li{counter-increment:step;position:relative;padding:11px 0 11px 42px;border-bottom:1px solid var(--line)}
+ol.seq li:last-child{border-bottom:none}
+ol.seq li::before{content:counter(step);position:absolute;left:0;top:11px;width:26px;height:26px;line-height:26px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:.78rem;background:var(--project);color:#fff;border-radius:50%}
+ol.seq .what{font-weight:700;font-size:.97rem}
+ol.seq .how{font-size:.88rem;color:var(--muted);margin-top:2px}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.actions a{font-family:'Share Tech Mono',monospace;font-size:.74rem;text-decoration:none;padding:8px 14px;border-radius:3px}
+.btn-solid{background:var(--primary);color:var(--bg)}
+.btn-solid:hover{background:var(--accent)}
+.btn-ghost{border:1px solid var(--primary);color:var(--primary)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+.ref{margin-top:34px}
+.ref h2{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;font-size:1.5rem;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--muted);font-weight:400}
+td.mono{font-family:'Share Tech Mono',monospace;font-size:.84rem}
+
+footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center}
+
+@media (max-width:600px){
+  .card{padding:16px}
+  .block .time{float:none;display:block;margin-top:2px}
+  header h1{font-size:1.9rem}
+  table,thead,tbody,th,td,tr{display:block}
+  thead{display:none}
+  td{border:none;padding:3px 0}
+  tbody tr{border-bottom:1px solid var(--line);padding:10px 0}
+}
+@media print{
+  body{background:#fff}
+  nav,.rail,.actions{display:none}
+  .card{break-inside:avoid;page-break-inside:avoid;box-shadow:none;border:1px solid #999}
+  .card[hidden]{display:block !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <img class="logo" src="logo.svg" alt="Desi Arms" onerror="this.onerror=null;this.src='logo.png';">
+  <h1>Staff Schedule</h1>
+  <div class="sub" id="stamp">What to work on, day by day</div>
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="task-manager.html">Task Manager</a>
+    <a href="time-tracker.html">Time Tracker</a>
+    <a href="laser-library.html">Laser Library</a>
+  </nav>
+</header>
+
+<div class="rail" id="rail">
+  <button data-day="all" aria-pressed="true">All week</button>
+  <button data-day="mon" aria-pressed="false">Mon</button>
+  <button data-day="tue" aria-pressed="false">Tue</button>
+  <button data-day="wed" aria-pressed="false">Wed</button>
+  <button data-day="thu" aria-pressed="false">Thu</button>
+  <button data-day="fri" aria-pressed="false">Fri</button>
+</div>
+
+<section class="card anchor">
+  <h2>Every day</h2>
+  <div class="theme">Start and end every shift like this</div>
+  <div class="block">
+    <h3>When you get in<span class="time">first 30 min</span></h3>
+    <ul>
+      <li>Clock in on the Time Tracker</li>
+      <li>Open the Task Manager and see if anything new came in or is late</li>
+      <li>Walk the store: straighten the shelves, note anything that's sold out, wipe down the cases</li>
+    </ul>
+  </div>
+  <div class="block">
+    <h3>All day</h3>
+    <ul>
+      <li>Customers come first. If someone walks in, stop what you're doing and help them.</li>
+      <li>If you're not sure about something, ask. Don't guess on anything with a serial number on it.</li>
+    </ul>
+  </div>
+  <div class="block">
+    <h3>Before you leave<span class="time">last 15 min</span></h3>
+    <ul>
+      <li>Clock out</li>
+      <li>Leave three quick lines in the Task Manager: what you finished, what you got stuck on, what you need from Glenn</li>
+    </ul>
+  </div>
+  <div class="actions">
+    <a class="btn-solid" href="time-tracker.html">Clock in</a>
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+  </div>
+</section>
+
+<section class="card day" data-day="mon">
+  <h2>Monday</h2>
+  <div class="theme">Order stock, check in deliveries</div>
+
+  <div class="block">
+    <h3>Build the order list<span class="time">about 2 hr</span></h3>
+    <ul>
+      <li>Look at what sold over the weekend</li>
+      <li>Make a list of what we need to restock, and which supplier to get it from — Lipsey's, Sports South, RSR, Zanders or Davidson's</li>
+      <li>Send the list to Glenn</li>
+      <li>Once he says yes, place the orders and write down what you ordered and when it should arrive</li>
+    </ul>
+    <div class="note"><strong>Don't place any order until Glenn approves it.</strong> Build the list, send it, wait.</div>
+  </div>
+
+  <div class="block">
+    <h3>Check in deliveries<span class="time">about 1 hr</span></h3>
+    <ul>
+      <li>Open the boxes and make sure everything on the packing slip is actually in there</li>
+      <li>Set any firearms aside — those get entered in the book tomorrow</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Store upgrade project<span class="time">about 1 hr</span></h3>
+    <ul>
+      <li>Pick up the next step from the project list at the bottom of this page</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Social media</h3>
+    <ul>
+      <li>Write all three of this week's posts now and schedule them, so you're not scrambling later in the week</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    <a class="btn-solid" href="time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+  </div>
+</section>
+
+<section class="card day" data-day="tue">
+  <h2>Tuesday</h2>
+  <div class="theme">Tag it, log it, set up the laser</div>
+
+  <div class="block">
+    <h3>Tag and log<span class="time">about 2 hr</span></h3>
+    <ul>
+      <li>Print price tags for everything that came in Monday on the Zebra label printer</li>
+      <li>Enter every firearm into the bound book in Corestore</li>
+      <li>Check each one against the packing slip as you go — serial number, make, model</li>
+      <li>Put the regular stock out on the shelves and the firearms in the case</li>
+    </ul>
+    <div class="note"><strong>The bound book lives in Corestore.</strong> You may hear FastBound mentioned — we're not on it yet, so don't enter anything there.</div>
+  </div>
+
+  <div class="block">
+    <h3>Get the laser ready<span class="time">about 2 hr</span></h3>
+    <ul>
+      <li>Clean up this week's artwork in Illustrator, then set the layers in LightBurn</li>
+      <li>Set up the holder that keeps the part in the same spot every time, and check your focus on the surface you're marking</li>
+      <li>Line parts up off the flat, solid parts — the spine of a blade or the flat end of a magazine. Never off a curved edge or a tip.</li>
+      <li>Look up your settings in the <a href="laser-library.html">Laser Library</a> and make sure you have the right lens on</li>
+    </ul>
+    <div class="note"><strong>Only run settings marked "Proven."</strong> A new material, a different color plastic, or anything that's a display piece goes to Glenn. Don't touch Damascus at all.</div>
+  </div>
+
+  <div class="actions">
+    <a class="btn-solid" href="time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-ghost" href="laser-library.html">Laser Library</a>
+  </div>
+</section>
+
+<section class="card day" data-day="wed">
+  <h2>Wednesday</h2>
+  <div class="theme">Email day</div>
+
+  <div class="block">
+    <h3>Check the automatic emails<span class="time">30–45 min</span></h3>
+    <ul>
+      <li>We have two email series that send on their own — one for Intro to Firearms, one for CCW. Each is three emails: one right away, one 3 days later, one 7 days after signup.</li>
+      <li>Make sure people are still getting added. They come in four ways: range signups, store signups, the website form, and past class students.</li>
+      <li>Look at how many people opened each email, clicked, or unsubscribed. If one email is doing way worse than the others, flag it.</li>
+      <li>Check the timing is still set to "wait 3 days after they sign up," not a specific calendar date.</li>
+      <li>Emails should be going out Tuesday through Thursday, between 9 and 10 in the morning.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>This week's email<span class="time">1–1.5 hr</span></h3>
+    <ul>
+      <li>Write one email to the whole list and send it the same day</li>
+      <li>Pick a different topic than the class emails cover, so people signed up for those don't get two similar emails in a row</li>
+    </ul>
+    <div class="note">You don't need this approved. Write it and send it.</div>
+  </div>
+
+  <div class="block">
+    <h3>Store upgrade project<span class="time">about 1.5 hr</span></h3>
+    <ul>
+      <li>Your biggest project block of the week. Work the list at the bottom in order.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Social media</h3>
+    <ul>
+      <li>First post of the week goes out</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    <a class="btn-solid" href="time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+  </div>
+</section>
+
+<section class="card day" data-day="thu">
+  <h2>Thursday<span class="badge">busiest day</span></h2>
+  <div class="theme">Customer jobs and engraving</div>
+
+  <div class="block">
+    <h3>Engraving and work orders<span class="time">about 3 hr</span></h3>
+    <ul>
+      <li>Run this week's engraving jobs using settings from the <a href="laser-library.html">Laser Library</a></li>
+      <li>Wipe the part down with rubbing alcohol before you mark it</li>
+      <li>Right after marking, put a coat of Renaissance Wax or gun oil on it so it doesn't rust</li>
+      <li>Go through every open work order and add where it stands and the last day you talked to the customer</li>
+    </ul>
+    <div class="note"><strong>Protect this block.</strong> If the store gets busy, this is the first thing that disappears. Let a work order run a day late before you give up engraving time.</div>
+  </div>
+
+  <div class="block">
+    <h3>Restock supplies</h3>
+    <ul>
+      <li>Ammo, cleaning supplies, targets</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Social media</h3>
+    <ul>
+      <li>Second post of the week goes out</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    <a class="btn-solid" href="time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+    <a class="btn-ghost" href="laser-library.html">Laser Library</a>
+  </div>
+</section>
+
+<section class="card day" data-day="fri">
+  <h2>Friday</h2>
+  <div class="theme">Fill the shelves, get ready for the weekend</div>
+
+  <div class="block">
+    <h3>Restock<span class="time">about 2 hr</span></h3>
+    <ul>
+      <li>Fill every shelf and case, and pull everything forward so nothing looks picked over</li>
+      <li>Second order list of the week — anything that'll run out over the weekend. Same as Monday: build it, send it, wait for Glenn.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Take photos<span class="time">about 1 hr</span></h3>
+    <ul>
+      <li>Photograph the engraving and Cerakote work you finished this week</li>
+      <li>Save them in the before/after folder. These are the photos the new website will use, so take your time and get good ones.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Weekend prep</h3>
+    <ul>
+      <li>Third post of the week goes out — something about the range or open class spots</li>
+      <li>Go through the task list. Anything still open, write one line on why.</li>
+      <li>Set up the range and the classroom for Saturday</li>
+    </ul>
+  </div>
+
+  <div class="actions">
+    <a class="btn-solid" href="time-tracker.html">Log time</a>
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+  </div>
+</section>
+
+<section class="card project">
+  <h2>Store upgrade project<span class="badge blue">in order</span></h2>
+  <div class="theme">Replacing Corestore &middot; finish one before starting the next</div>
+  <ol class="seq">
+    <li>
+      <div class="what">Set up a demo of the new register system</div>
+      <div class="how">Book the demo and actually run our kinds of sales through it, not just whatever the salesperson wants to show you.</div>
+    </li>
+    <li>
+      <div class="what">Get a free BigCommerce test account</div>
+      <div class="how">A practice version of the website only we can see. Nothing goes public.</div>
+    </li>
+    <li>
+      <div class="what">Pick who processes our card payments</div>
+      <div class="how">Make sure they handle in-store card swipes as well as online, and find out if both can run through one account.</div>
+    </li>
+    <li>
+      <div class="what">Move the bound book to FastBound</div>
+      <div class="how">Until Glenn signs off on this, Corestore is still the real book. Don't enter anything twice.</div>
+    </li>
+    <li>
+      <div class="what">Build the website in BigCommerce</div>
+      <div class="how">The big one. We're building it ourselves, and it runs long after the first four are done.</div>
+    </li>
+  </ol>
+  <div class="note blue"><strong>One at a time.</strong> Each step has a decision attached to it. Starting the next one early usually means redoing it.</div>
+  <div class="actions">
+    <a class="btn-ghost" href="task-manager.html">Open tasks</a>
+  </div>
+</section>
+
+<section class="ref">
+  <h2>What you decide, what Glenn decides</h2>
+  <table>
+    <thead><tr><th>Job</th><th>Who calls it</th></tr></thead>
+    <tbody>
+      <tr><td>Emails and social posts</td><td>You. Send them, no approval needed.</td></tr>
+      <tr><td>Stock orders</td><td>You build the list, Glenn approves before anything is ordered.</td></tr>
+      <tr><td>Engraving with proven settings</td><td>You. Go ahead.</td></tr>
+      <tr><td>New material, new color, display pieces, Damascus</td><td>Glenn only.</td></tr>
+      <tr><td>Register system, payments, website decisions</td><td>You research and recommend, Glenn decides.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="ref">
+  <h2>What we use right now</h2>
+  <table>
+    <thead><tr><th>For</th><th>We use</th><th>Switching to</th></tr></thead>
+    <tbody>
+      <tr><td>Bound book, 4473s</td><td class="mono">Corestore</td><td class="mono">FastBound</td></tr>
+      <tr><td>Register and sales</td><td class="mono">Corestore</td><td class="mono">still deciding</td></tr>
+      <tr><td>Website</td><td class="mono">none yet</td><td class="mono">BigCommerce</td></tr>
+      <tr><td>Email</td><td class="mono">Mailchimp</td><td class="mono">staying</td></tr>
+      <tr><td>Bookkeeping</td><td class="mono">QuickBooks</td><td class="mono">staying</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>Desi Arms internal &middot; if something here is out of date, tell Glenn</footer>
+
+</div>
+
+<script>
+(function(){
+  var rail = document.getElementById('rail');
+  var days = Array.prototype.slice.call(document.querySelectorAll('.card.day'));
+  var keys = ['sun','mon','tue','wed','thu','fri','sat'];
+  var today = keys[new Date().getDay()];
+
+  function show(day){
+    days.forEach(function(c){ c.hidden = (day !== 'all' && c.dataset.day !== day); });
+    Array.prototype.forEach.call(rail.children, function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.day === day));
+    });
+  }
+
+  rail.addEventListener('click', function(e){
+    var b = e.target.closest('button');
+    if (b) show(b.dataset.day);
+  });
+
+  var match = days.filter(function(c){ return c.dataset.day === today; })[0];
+  if (match){
+    match.classList.add('today');
+    document.getElementById('stamp').textContent = 'Today is ' + match.querySelector('h2').childNodes[0].textContent.trim();
+    show(today);
+  }
+})();
+</script>
+</body>
+</html>
