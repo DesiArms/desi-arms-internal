@@ -11,6 +11,9 @@
      4. Decide hosting: embed this same file (or its OPTICS data) on
         the BigCommerce services page — do NOT fork a second copy.
      5. (Optional) Add analytics / lead capture on the CTA.
+     6. Remove the internal staff header block (logo header with
+        "← Dashboard" link and the .tool-nav row of internal tools)
+        and the tool-nav.css / tool-nav.js includes.
      Keep this file internal-dashboard-linked until the above are done.
      ============================================================ -->
 <html lang="en">
@@ -18,6 +21,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Night Vision & Thermal Optic Finder — Desi Arms</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   /* ============================================================
      DATA-DRIVEN. All optic data lives in the OPTICS array in the
@@ -25,15 +29,32 @@
      Bump LAST_UPDATED when you revise figures.
      ============================================================ */
   :root {
-    --ink: #14171a; --steel: #5a6470; --hairline: #d7d9d4;
-    --paper: #f0ede6; --card: #ffffff;
+    /* neutrals mapped onto the suite palette (Time Tracker) */
+    --ink: var(--primary); --steel: var(--text-muted); --hairline: var(--border);
+    --paper: var(--bg); --card: var(--card-bg);
     --brass: #9a6b2f; --brass-soft: #f2e6d3;
     --digital: #2f6b6b; --digital-soft: #dcebea;
     --thermal: #a5482a; --thermal-soft: #f3ddd3;
     --safe: #3a7a4a; --warn: #b06a1f; --absent: #98602a;
+    /* suite palette (Time Tracker) — completes the shared set */
+    --primary: #1a2a3a;
+    --primary-light: #2e4057;
+    --accent: #D32434;
+    --accent-hover: #a01c28;
+    --red-accent: #b22234;
+    --bg: #f5f2ed;
+    --card-bg: #ffffff;
+    --text: #2c2c2c;
+    --text-muted: #6b7280;
+    --border: #d4cfc7;
+    --border-focus: #D32434;
+    --error: #c0392b;
+    --input-bg: #faf9f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--paper); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--paper); line-height: 1.5; -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 1140px; margin: 0 auto; padding: 0 20px; }
 
   header { border-bottom: 2px solid var(--ink); padding: 36px 0 26px; margin-bottom: 8px; }
@@ -42,6 +63,26 @@
   .sub { margin-top: 14px; max-width: 680px; color: var(--steel); font-size: 15.5px; }
   .meta-row { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--steel); align-items: center; }
   .stamp { display: inline-flex; align-items: center; gap: 6px; background: var(--brass-soft); color: var(--absent); padding: 4px 10px; border-radius: 3px; font-weight: 600; }
+
+  /* ---- Staff header — Time Tracker suite pattern (internal only) ---- */
+  .brand-wrap { padding-top: 40px; }
+  .form-header { text-align: center; position: relative; }
+  .back-link {
+    position: absolute; top: 0; right: 0;
+    color: var(--text-muted); text-decoration: none;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    border: 1px solid var(--border); padding: 7px 18px; border-radius: 6px;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .back-link:hover { border-color: var(--accent); color: var(--accent); }
+  .logo-wrapper { margin-bottom: 6px; }
+  .logo-wrapper img { max-width: 260px; height: auto; }
+  .logo-tagline {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.7rem; letter-spacing: 0.2em;
+    color: var(--text-muted); text-transform: uppercase; margin-top: 4px;
+  }
+  .red-rule { width: 60px; height: 3px; background: var(--accent); margin: 12px auto; border-radius: 2px; }
 
   .finder-banner { background: var(--ink); color: #fff; border-radius: 10px; padding: 26px; margin: 26px 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
   .finder-banner .fb-text h2 { font-family: "Georgia",serif; font-size: 22px; margin-bottom: 5px; }
@@ -154,8 +195,22 @@
     .finder-banner button { width: 100%; }
   }
 </style>
+<link rel="stylesheet" href="tool-nav.css">
+<script src="tool-nav.js" defer></script>
 </head>
 <body>
+
+<div class="wrap brand-wrap">
+  <div class="form-header">
+    <a href="index.html" class="back-link">← Dashboard</a>
+    <div class="logo-wrapper">
+      <img src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg" onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'" alt="Desi Arms" style="max-width:260px;height:auto;">
+    </div>
+    <div class="logo-tagline">— We've Got Your Six —</div>
+    <div class="red-rule"></div>
+    <nav class="tool-nav" aria-label="Tools" data-current="nv-optic-comparison.html"></nav>
+  </div>
+</div>
 
 <header>
   <div class="wrap">

@@ -6,7 +6,7 @@
 <title>Laser Library — Desi Arms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
 <!-- ═══ ACCESS GATE ═══
      Reuses the dashboard's session. No password is stored on this page.
@@ -38,30 +38,59 @@
 <style>
 :root{
   --primary:#1a2a3a;
+  --primary-light:#2e4057;
   --accent:#D32434;
+  --accent-hover:#a01c28;
+  --red-accent:#b22234;
   --bg:#f5f2ed;
+  --card-bg:#ffffff;
+  --text:#2c2c2c;
+  --text-muted:#6b7280;
+  --border:#d4cfc7;
+  --border-focus:#D32434;
+  --error:#c0392b;
+  --input-bg:#faf9f7;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:0 10px 40px rgba(0,0,0,0.08),0 2px 10px rgba(0,0,0,0.04);
+  /* aliases used by this tool's existing rules */
   --card:#ffffff;
-  --line:#d9d3c9;
-  --muted:#6b7480;
+  --line:#d4cfc7;
+  --muted:#6b7280;
   --proven:#2f6f4f;
   --testing:#b7791f;
   --queued:#6b7480;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--primary);font-family:'Barlow',system-ui,sans-serif;line-height:1.5}
+body{margin:0;background:var(--bg);color:var(--primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.5}
 .wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
 
-header{text-align:center;padding:12px 0 20px;border-bottom:2px solid var(--primary)}
-header .logo{height:56px;width:auto;mix-blend-mode:multiply}
-header h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;letter-spacing:.02em;margin:10px 0 2px;text-transform:uppercase}
-header .sub{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--muted)}
-nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
-nav a{font-family:'Share Tech Mono',monospace;font-size:.78rem;text-decoration:none;color:var(--primary);border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:3px}
-nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
+/* Header — Time Tracker suite pattern */
+.form-header{text-align:center;margin-bottom:36px;position:relative}
+.back-link{
+  position:absolute;top:0;right:0;
+  color:var(--text-muted);text-decoration:none;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border:1px solid var(--border);padding:7px 18px;border-radius:6px;
+  transition:all .2s;white-space:nowrap;
+}
+.back-link:hover{border-color:var(--accent);color:var(--accent)}
+.logo-wrapper{margin-bottom:6px}
+.logo-wrapper img{max-width:260px;height:auto}
+.logo-tagline{
+  font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.2em;
+  color:var(--text-muted);text-transform:uppercase;margin-top:4px;
+}
+.red-rule{width:60px;height:3px;background:var(--accent);margin:12px auto;border-radius:2px}
+.page-subtitle{font-size:14px;color:var(--text-muted)}
+h1.tool-title{
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;
+  letter-spacing:.02em;text-transform:uppercase;margin:10px 0 2px;color:var(--primary);
+}
 
 .controls{margin:24px 0 6px}
 .controls input{
-  width:100%;font-family:'Barlow',sans-serif;font-size:.95rem;
+  width:100%;font-family:'DM Sans',sans-serif;font-size:.95rem;
   padding:9px 12px;border:1px solid var(--line);border-radius:3px;background:var(--card);color:var(--primary);
 }
 .controls input:focus{outline:2px solid var(--accent);outline-offset:1px}
@@ -106,7 +135,7 @@ nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
 .ref .card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:18px 20px}
 .ref ul{margin:0;padding-left:19px;font-size:.92rem}
 .ref li{margin:5px 0}
-.ref h3{font-family:'Barlow',sans-serif;font-size:.95rem;margin:14px 0 4px}
+.ref h3{font-family:'DM Sans',sans-serif;font-size:.95rem;margin:14px 0 4px}
 .ref h3:first-child{margin-top:0}
 .ref table{width:100%;border-collapse:collapse;font-size:.88rem}
 .ref th,.ref td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -119,7 +148,7 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
 
 @media (max-width:600px){
   .param{flex:1 1 50%;border-bottom:1px solid var(--line)}
-  header h1{font-size:1.9rem}
+  h1.tool-title{font-size:1.9rem}
   .ref table,.ref thead,.ref tbody,.ref th,.ref td,.ref tr{display:block}
   .ref thead{display:none}
   .ref td{border:none;padding:3px 0}
@@ -131,22 +160,22 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   .entry{break-inside:avoid;page-break-inside:avoid}
 }
 </style>
+<link rel="stylesheet" href="tool-nav.css">
+<script src="tool-nav.js" defer></script>
 </head>
 <body>
 <div class="wrap">
 
-<header>
-  <img class="logo" src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg"
-       onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'"
-       alt="Desi Arms">
-  <h1>Laser Library</h1>
-  <div class="sub">JPT 50W fiber &middot; LightBurn &middot; 70 / 175 / 210 mm</div>
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="staff-schedule.html">Staff Schedule</a>
-    <a href="desi-arms-task-list.html">Task Manager</a>
-    <a href="desi-arms-time-tracker.html">Time Tracker</a>
-  </nav>
+<header class="form-header">
+    <a href="index.html" class="back-link">← Dashboard</a>
+    <div class="logo-wrapper">
+      <img src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg" onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'" alt="Desi Arms" style="max-width:260px;height:auto;">
+    </div>
+    <div class="logo-tagline">— We've Got Your Six —</div>
+    <div class="red-rule"></div>
+    <h1 class="tool-title">Laser Library</h1>
+    <p class="page-subtitle">JPT 50W fiber &middot; LightBurn &middot; 70 / 175 / 210 mm</p>
+    <nav class="tool-nav" aria-label="Tools" data-current="laser-library.html"></nav>
 </header>
 
 <div class="controls">

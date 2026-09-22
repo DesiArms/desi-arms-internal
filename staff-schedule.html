@@ -6,7 +6,7 @@
 <title>Staff Schedule — Desi Arms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
 <!-- ═══ ACCESS GATE ═══
      Reuses the dashboard's session. No password is stored on this page.
@@ -38,24 +38,53 @@
 <style>
 :root{
   --primary:#1a2a3a;
+  --primary-light:#2e4057;
   --accent:#D32434;
+  --accent-hover:#a01c28;
+  --red-accent:#b22234;
   --bg:#f5f2ed;
+  --card-bg:#ffffff;
+  --text:#2c2c2c;
+  --text-muted:#6b7280;
+  --border:#d4cfc7;
+  --border-focus:#D32434;
+  --error:#c0392b;
+  --input-bg:#faf9f7;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:0 10px 40px rgba(0,0,0,0.08),0 2px 10px rgba(0,0,0,0.04);
+  /* aliases used by this tool's existing rules */
   --card:#ffffff;
-  --line:#d9d3c9;
-  --muted:#6b7480;
+  --line:#d4cfc7;
+  --muted:#6b7280;
   --project:#2f5d7a;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--primary);font-family:'Barlow',system-ui,sans-serif;line-height:1.55}
+body{margin:0;background:var(--bg);color:var(--primary);font-family:'DM Sans',system-ui,sans-serif;line-height:1.55}
 .wrap{max-width:1040px;margin:0 auto;padding:24px 18px 64px}
 
-header{text-align:center;padding:12px 0 20px;border-bottom:2px solid var(--primary)}
-header .logo{height:56px;width:auto;mix-blend-mode:multiply}
-header h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;letter-spacing:.02em;margin:10px 0 2px;text-transform:uppercase}
-header .sub{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--muted)}
-nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
-nav a{font-family:'Share Tech Mono',monospace;font-size:.78rem;text-decoration:none;color:var(--primary);border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:3px}
-nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
+/* Header — Time Tracker suite pattern */
+.form-header{text-align:center;margin-bottom:36px;position:relative}
+.back-link{
+  position:absolute;top:0;right:0;
+  color:var(--text-muted);text-decoration:none;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border:1px solid var(--border);padding:7px 18px;border-radius:6px;
+  transition:all .2s;white-space:nowrap;
+}
+.back-link:hover{border-color:var(--accent);color:var(--accent)}
+.logo-wrapper{margin-bottom:6px}
+.logo-wrapper img{max-width:260px;height:auto}
+.logo-tagline{
+  font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.2em;
+  color:var(--text-muted);text-transform:uppercase;margin-top:4px;
+}
+.red-rule{width:60px;height:3px;background:var(--accent);margin:12px auto;border-radius:2px}
+.page-subtitle{font-size:14px;color:var(--text-muted)}
+h1.tool-title{
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:2.4rem;
+  letter-spacing:.02em;text-transform:uppercase;margin:10px 0 2px;color:var(--primary);
+}
 
 .rail{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:22px 0 10px}
 .rail button{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 16px;border-radius:3px;cursor:pointer}
@@ -73,7 +102,7 @@ nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent)}
 .badge.blue{background:var(--project)}
 
 .block{margin:16px 0 0}
-.block h3{font-family:'Barlow',sans-serif;font-weight:700;font-size:.95rem;margin:0 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.block h3{font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;margin:0 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
 .block ul{margin:8px 0 0;padding-left:20px}
 .block li{margin:6px 0}
 .block .time{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--muted);font-weight:400;float:right}
@@ -108,7 +137,7 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
 @media (max-width:600px){
   .card{padding:16px}
   .block .time{float:none;display:block;margin-top:2px}
-  header h1{font-size:1.9rem}
+  h1.tool-title{font-size:1.9rem}
   table,thead,tbody,th,td,tr{display:block}
   thead{display:none}
   td{border:none;padding:3px 0}
@@ -121,22 +150,22 @@ footer{margin-top:40px;font-family:'Share Tech Mono',monospace;font-size:.72rem;
   .card[hidden]{display:block !important}
 }
 </style>
+<link rel="stylesheet" href="tool-nav.css">
+<script src="tool-nav.js" defer></script>
 </head>
 <body>
 <div class="wrap">
 
-<header>
-  <img class="logo" src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg"
-       onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'"
-       alt="Desi Arms">
-  <h1>Staff Schedule</h1>
-  <div class="sub" id="stamp">What to work on, day by day</div>
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="desi-arms-task-list.html">Task Manager</a>
-    <a href="desi-arms-time-tracker.html">Time Tracker</a>
-    <a href="laser-library.html">Laser Library</a>
-  </nav>
+<header class="form-header">
+    <a href="index.html" class="back-link">← Dashboard</a>
+    <div class="logo-wrapper">
+      <img src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg" onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'" alt="Desi Arms" style="max-width:260px;height:auto;">
+    </div>
+    <div class="logo-tagline">— We've Got Your Six —</div>
+    <div class="red-rule"></div>
+    <h1 class="tool-title">Staff Schedule</h1>
+    <p class="page-subtitle" id="stamp">What to work on, day by day</p>
+    <nav class="tool-nav" aria-label="Tools" data-current="staff-schedule.html"></nav>
 </header>
 
 <div class="rail" id="rail">

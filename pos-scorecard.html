@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POS Scorecard — Desi Arms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- ═══ ACCESS GATE ═══
+     Reuses the dashboard's session. No password is stored on this page.
+     Not signed in -> bounced to index.html to log in. -->
+<style id="gateStyle">body{visibility:hidden}</style>
+<script>
+(function(){
+  var AUTH_KEY = 'da_auth', EXP_KEY = 'da_auth_exp', ok = false;
+  try {
+    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+      ok = true;
+    } else {
+      var exp = localStorage.getItem(EXP_KEY);
+      if (localStorage.getItem(AUTH_KEY) === '1' && exp && Date.now() < parseInt(exp)) {
+        sessionStorage.setItem(AUTH_KEY, '1');
+        ok = true;
+      }
+    }
+  } catch (e) { ok = false; }
+  if (ok) {
+    var s = document.getElementById('gateStyle');
+    if (s) s.parentNode.removeChild(s);
+  } else {
+    location.replace('index.html');
+  }
+})();
+</script>
+
+<style>
+:root{
+  --primary:#1a2a3a;
+  --primary-light:#2e4057;
+  --accent:#D32434;
+  --accent-hover:#a01c28;
+  --red-accent:#b22234;
+  --bg:#f5f2ed;
+  --card:#ffffff;
+  --card-bg:#ffffff;
+  --text:#2c2c2c;
+  --muted:#6b7280;
+  --text-muted:#6b7280;
+  --line:#d4cfc7;
+  --border:#d4cfc7;
+  --ok:#2f6f4f;
+  --loss:#b02a37;
+  --same:#8a8f96;
+  --unknown:#b9b3a7;
+  --baseline:#2a3f56;
+  --shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  /* suite palette (Time Tracker) — completes the shared set */
+  --border-focus: #D32434;
+  --error: #c0392b;
+  --input-bg: #faf9f7;
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--primary);
+  font-family:'DM Sans',system-ui,sans-serif;
+  line-height:1.5;
+}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 18px 72px}
+
+/* Header — matches suite pattern */
+.form-header{text-align:center;margin-bottom:28px;position:relative;padding-top:4px}
+.back-link{
+  position:absolute;top:0;right:0;
+  color:var(--text-muted);text-decoration:none;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border:1px solid var(--border);padding:7px 18px;border-radius:6px;
+  transition:all .2s;white-space:nowrap;
+}
+.back-link:hover{border-color:var(--accent);color:var(--accent)}
+.logo-wrapper{margin-bottom:6px}
+.logo-wrapper img{max-width:260px;height:auto}
+.logo-tagline{
+  font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.2em;
+  color:var(--text-muted);text-transform:uppercase;margin-top:4px;
+}
+.red-rule{width:60px;height:3px;background:var(--accent);margin:12px auto;border-radius:2px}
+.page-subtitle{font-size:14px;color:var(--text-muted)}
+h1.tool-title{
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.9rem;
+  letter-spacing:.02em;text-transform:uppercase;margin:10px 0 2px;color:var(--primary);
+}
+
+/* Toolbar */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:22px 0 8px}
+.toolbar .left{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{
+  font-family:'DM Sans',system-ui,sans-serif;font-size:.78rem;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--primary);
+  padding:8px 14px;border-radius:3px;
+}
+.btn:hover{border-color:var(--primary)}
+.btn-danger:hover{border-color:var(--accent);color:var(--accent)}
+.hint{font-family:'DM Sans',system-ui,sans-serif;font-size:.72rem;color:var(--muted)}
+
+/* Tally strip */
+.tally{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 18px}
+.tally-card{
+  flex:1 1 150px;background:var(--card);border:1px solid var(--line);
+  border-radius:4px;padding:10px 12px;
+}
+.tally-card .name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:.02em}
+.tally-card .nums{font-family:'DM Sans',system-ui,sans-serif;font-size:.74rem;margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.tally-card .g{color:var(--ok)}
+.tally-card .l{color:var(--loss)}
+.tally-card .u{color:var(--muted)}
+
+/* Table */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:1120px}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th:last-child,td:last-child{border-right:none}
+thead th{
+  position:sticky;top:0;z-index:3;
+  background:var(--primary);color:#fff;
+  font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.95rem;
+  letter-spacing:.02em;
+}
+thead th.baseline{background:var(--baseline)}
+/* criteria column sticky */
+th.crit,td.crit{
+  position:sticky;left:0;z-index:2;background:var(--card);
+  min-width:260px;max-width:300px;font-size:.86rem;
+}
+thead th.crit{z-index:4;background:var(--primary)}
+tr.section td{
+  background:var(--accent);color:#fff;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.03em;font-size:.9rem;
+  position:sticky;left:0;
+}
+td.crit{color:var(--primary);font-weight:500}
+
+/* cells */
+select.rate,input.val{
+  font-family:'DM Sans',system-ui,sans-serif;font-size:.78rem;
+  width:100%;border:1px solid var(--line);border-radius:3px;
+  padding:5px 6px;background:#fff;color:var(--primary);
+}
+select.rate:focus,input.val:focus{outline:2px solid var(--primary);outline-offset:-1px}
+.cellbox{display:flex;flex-direction:column;gap:4px}
+.delta{
+  font-family:'DM Sans',system-ui,sans-serif;font-size:.66rem;
+  padding:2px 6px;border-radius:2px;align-self:flex-start;letter-spacing:.03em;
+}
+.delta.gain{background:#e2efe7;color:var(--ok)}
+.delta.loss{background:#f6e2e4;color:var(--loss)}
+.delta.same{background:#eceef0;color:var(--same)}
+.delta.unknown{background:#efece4;color:var(--muted)}
+.delta.na{background:#efece4;color:var(--muted)}
+.baseline-cell{background:#f0f3f7}
+.notecell input.val{min-height:34px}
+
+footer{margin-top:22px;font-family:'DM Sans',system-ui,sans-serif;font-size:.72rem;color:var(--muted);text-align:center}
+
+@media (max-width:640px){
+  h1.tool-title{font-size:1.7rem}
+  th.crit,td.crit{min-width:190px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<link rel="stylesheet" href="tool-nav.css">
+<script src="tool-nav.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="form-header">
+    <a href="index.html" class="back-link">← Dashboard</a>
+    <div class="logo-wrapper">
+      <img src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg" onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'" alt="Desi Arms" style="max-width:260px;height:auto;">
+    </div>
+    <div class="logo-tagline">— We've Got Your Six —</div>
+    <div class="red-rule"></div>
+    <h1 class="tool-title">POS Scorecard</h1>
+    <p class="page-subtitle">Corestore replacement · vs. current baseline · BigCommerce · FastBound · Payroc</p>
+    <nav class="tool-nav" aria-label="Tools" data-current="pos-scorecard.html"></nav>
+  </header>
+
+  <div class="toolbar">
+    <div class="left">
+      <button class="btn" id="exportBtn">Export CSV</button>
+      <button class="btn btn-danger" id="resetBtn">Reset all</button>
+    </div>
+    <div class="hint">Saved in this browser only · Delta compares each vendor to Corestore</div>
+  </div>
+
+  <div class="tally" id="tally"></div>
+
+  <div class="tablewrap">
+    <table id="grid">
+      <thead><tr id="headRow"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+
+  <footer>Desi Arms internal tools · POS evaluation · Corestore = current system (baseline)</footer>
+</div>
+
+<script>
+/* ══════════ DATA MODEL ══════════ */
+
+/* Vendors: Corestore first as the baseline everything is measured against. */
+const VENDORS = [
+  { id:"corestore", name:"Corestore", baseline:true },
+  { id:"trident",   name:"Trident 1" },
+  { id:"microbiz",  name:"MicroBiz" },
+  { id:"monarch",   name:"Monarch" },
+  { id:"buckffl",   name:"Buck FFL" },
+  { id:"birddog",   name:"Bird Dog CRM" }
+];
+
+/* Criteria. type:"rate" -> Yes/Partial/No/N-A/? dropdown + Delta.
+   type:"text" -> free-text value (fees, notes), no Delta. */
+const CRITERIA = [
+  { section:"Payment (Payroc — two rails)" },
+  { id:"pay_cardpresent", type:"rate", label:"Payroc — card-present (in-store register)" },
+  { id:"pay_online",      type:"text", label:"Online orders via BigCommerce Payroc / Authorize.Net checkout" },
+  { id:"pay_singlemid",   type:"rate", label:"Single merchant ID / consolidated settlement" },
+
+  { section:"E-commerce front-end" },
+  { id:"ec_bigcommerce",  type:"rate", label:"BigCommerce integration" },
+  { id:"ec_woocommerce",  type:"rate", label:"WooCommerce integration" },
+  { id:"ec_ordersync",    type:"rate", label:"Online order syncs to POS (inventory + disposition)" },
+  { id:"ec_feedpublish",  type:"rate", label:"Distributor feed auto-publishes to website" },
+
+  { section:"Compliance / bound book" },
+  { id:"cp_fastbound",    type:"rate", label:"FastBound integration (keep third-party bound book)" },
+  { id:"cp_syncmode",     type:"text", label:"FastBound sync — real-time bidirectional vs. batch" },
+  { id:"cp_e4473",        type:"rate", label:"Native e4473 / kiosk mode" },
+  { id:"cp_adscope",      type:"rate", label:"Acquisitions / dispositions / trade-ins / transfers" },
+
+  { section:"Inventory & distributors" },
+  { id:"iv_feeds",        type:"text", label:"Distributor feeds (Lipsey's, Sports South, Davidson's, Chattanooga, RSR)" },
+  { id:"iv_serialized",   type:"rate", label:"Serialized inventory tracking" },
+  { id:"iv_pricelookup",  type:"rate", label:"Real-time cross-vendor price / availability lookup" },
+  { id:"iv_manufacture",  type:"text", label:"Manufacturing / assembled-firearm workflow" },
+
+  { section:"Operations" },
+  { id:"op_gunsmith",     type:"rate", label:"Gunsmithing work orders" },
+  { id:"op_range",        type:"rate", label:"Range / lane scheduling" },
+  { id:"op_classes",      type:"rate", label:"Class / training scheduling" },
+  { id:"op_qbo",          type:"rate", label:"QuickBooks Online sync" },
+  { id:"op_mailchimp",    type:"rate", label:"Mailchimp integration (email marketing)" },
+  { id:"op_marketing",    type:"text", label:"Marketing tools supported / notes" },
+
+  { section:"Hardware & platform" },
+  { id:"hw_existing",     type:"rate", label:"Use existing computers / 2D scanners / receipt printer" },
+  { id:"hw_cloud",        type:"rate", label:"Cloud-based / multi-OS (browser)" },
+  { id:"hw_mobile",       type:"rate", label:"Mobile app" },
+
+  { section:"Commercial" },
+  { id:"cm_monthly",      type:"text", label:"Monthly fee" },
+  { id:"cm_setup",        type:"text", label:"Implementation / setup fee" },
+  { id:"cm_contract",     type:"text", label:"Contract length / lock-in" },
+  { id:"cm_migration",    type:"rate", label:"Data migration off Corestore (bound book continuity)" },
+
+  { section:"Notes / follow-ups" },
+  { id:"nt_open",         type:"text", label:"Open questions to resolve" }
+];
+
+/* Seed values. Trident 1 pre-filled from the demo; everything else blank. */
+const SEED = {
+  corestore: {
+    iv_manufacture:"Assemblies / build function — handles component-to-finished-firearm automatically (current capability)"
+  },
+  trident: {
+    pay_cardpresent:"No",
+    pay_online:"Uses BigCommerce checkout (Authorize.Net gateway)",
+    pay_singlemid:"?",
+    ec_bigcommerce:"Yes",
+    ec_woocommerce:"Yes",
+    ec_ordersync:"Partial",
+    ec_feedpublish:"No",
+    cp_fastbound:"Yes",
+    cp_syncmode:"? confirm",
+    cp_e4473:"?",
+    cp_adscope:"?",
+    iv_feeds:"? confirm which",
+    iv_serialized:"Yes",
+    iv_pricelookup:"?",
+    iv_manufacture:"MANUAL (regression vs Corestore): transfer components out, then acquire complete firearm. Corestore does this automatically via assemblies/build.",
+    op_gunsmith:"?",
+    op_range:"?",
+    op_classes:"?",
+    op_qbo:"?",
+    op_mailchimp:"No",
+    op_marketing:"Twilio or Otter only; no Mailchimp. Would extract from tool and import to Mailchimp manually. Otter has SMS but 2A marketing texting is highly regulated.",
+    hw_existing:"?",
+    hw_cloud:"Yes",
+    hw_mobile:"?",
+    cm_monthly:"~$350/mo",
+    cm_setup:"$0 (none currently)",
+    cm_contract:"?",
+    cm_migration:"?",
+    nt_open:"NO FOLLOW-UP RECEIVED — owed: supported hardware list, firm pricing, add'l info. Also confirm: Payroc card-present; BC approved-provider/2% fee; FastBound sync mode; distributor feeds; QBO"
+  }
+};
+
+const RATE_OPTIONS = ["", "Yes", "Partial", "No", "N/A", "?"];
+const STORE_KEY = "da_pos_scorecard_v1";
+
+/* ══════════ STATE ══════════ */
+let state = load();
+
+function load(){
+  let base = {};
+  // start from seed
+  for (const vid in SEED){ base[vid] = Object.assign({}, SEED[vid]); }
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw){
+      const saved = JSON.parse(raw);
+      // saved values win over seed
+      for (const vid in saved){
+        base[vid] = Object.assign(base[vid] || {}, saved[vid]);
+      }
+    }
+  } catch(e){ /* ignore, use seed */ }
+  return base;
+}
+function save(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+}
+function getVal(vid, cid){
+  return (state[vid] && state[vid][cid] != null) ? state[vid][cid] : "";
+}
+function setVal(vid, cid, v){
+  if (!state[vid]) state[vid] = {};
+  state[vid][cid] = v;
+  save();
+}
+
+/* ══════════ DELTA ══════════ */
+/* Compare a vendor's rate cell to Corestore's on the same row. */
+function deltaFor(cid, vid){
+  const base = getVal("corestore", cid);
+  const cur  = getVal(vid, cid);
+  if (base === "" || cur === "" || base === "?" || cur === "?") return {cls:"unknown", txt:"—"};
+  if (base === "N/A" || cur === "N/A") return {cls:"na", txt:"n/a"};
+  const rank = { "No":0, "Partial":1, "Yes":2 };
+  if (!(base in rank) || !(cur in rank)) return {cls:"unknown", txt:"—"};
+  if (rank[cur] > rank[base]) return {cls:"gain", txt:"gain"};
+  if (rank[cur] < rank[base]) return {cls:"loss", txt:"loss"};
+  return {cls:"same", txt:"same"};
+}
+
+/* ══════════ RENDER ══════════ */
+function buildHead(){
+  const row = document.getElementById("headRow");
+  row.innerHTML = "";
+  const crit = document.createElement("th");
+  crit.className = "crit";
+  crit.textContent = "Criteria";
+  row.appendChild(crit);
+  VENDORS.forEach(v=>{
+    const th = document.createElement("th");
+    th.textContent = v.name + (v.baseline ? "  (current)" : "");
+    if (v.baseline) th.className = "baseline";
+    row.appendChild(th);
+  });
+}
+
+function buildBody(){
+  const body = document.getElementById("body");
+  body.innerHTML = "";
+  CRITERIA.forEach(c=>{
+    const tr = document.createElement("tr");
+    if (c.section){
+      tr.className = "section";
+      const td = document.createElement("td");
+      td.colSpan = VENDORS.length + 1;
+      td.textContent = c.section;
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+    // criteria label cell
+    const label = document.createElement("td");
+    label.className = "crit";
+    label.textContent = c.label;
+    tr.appendChild(label);
+
+    VENDORS.forEach(v=>{
+      const td = document.createElement("td");
+      if (v.baseline) td.className = "baseline-cell";
+      const box = document.createElement("div");
+      box.className = "cellbox";
+
+      if (c.type === "rate"){
+        const sel = document.createElement("select");
+        sel.className = "rate";
+        RATE_OPTIONS.forEach(o=>{
+          const opt = document.createElement("option");
+          opt.value = o; opt.textContent = (o===""?"—":o);
+          sel.appendChild(opt);
+        });
+        sel.value = normalizeRate(getVal(v.id, c.id));
+        sel.addEventListener("change", ()=>{
+          setVal(v.id, c.id, sel.value);
+          renderDeltasForRow(c.id);
+          renderTally();
+        });
+        box.appendChild(sel);
+
+        if (!v.baseline){
+          const d = document.createElement("span");
+          d.className = "delta";
+          d.dataset.deltaFor = c.id + "|" + v.id;
+          box.appendChild(d);
+        }
+      } else {
+        const inp = document.createElement("input");
+        inp.className = "val";
+        inp.type = "text";
+        inp.value = getVal(v.id, c.id);
+        inp.addEventListener("input", ()=> setVal(v.id, c.id, inp.value));
+        td.classList.add("notecell");
+        box.appendChild(inp);
+      }
+      td.appendChild(box);
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  // paint all deltas
+  CRITERIA.filter(c=>c.type==="rate").forEach(c=>renderDeltasForRow(c.id));
+}
+
+/* If a seeded free-text value ("Yes"/"No") lands in a rate cell, keep it if valid else blank */
+function normalizeRate(v){
+  return RATE_OPTIONS.includes(v) ? v : (v==="?" ? "?" : "");
+}
+
+function renderDeltasForRow(cid){
+  VENDORS.forEach(v=>{
+    if (v.baseline) return;
+    const el = document.querySelector('[data-delta-for="'+cid+'|'+v.id+'"]');
+    if (!el) return;
+    const d = deltaFor(cid, v.id);
+    el.className = "delta " + d.cls;
+    el.textContent = d.txt;
+  });
+}
+
+function renderTally(){
+  const wrap = document.getElementById("tally");
+  wrap.innerHTML = "";
+  VENDORS.filter(v=>!v.baseline).forEach(v=>{
+    let g=0,l=0,u=0;
+    CRITERIA.filter(c=>c.type==="rate").forEach(c=>{
+      const d = deltaFor(c.id, v.id);
+      if (d.cls==="gain") g++;
+      else if (d.cls==="loss") l++;
+      else if (d.cls==="unknown") u++;
+    });
+    const card = document.createElement("div");
+    card.className = "tally-card";
+    card.innerHTML = '<div class="name">'+v.name+'</div>'+
+      '<div class="nums"><span class="g">'+g+' gain</span>'+
+      '<span class="l">'+l+' loss</span>'+
+      '<span class="u">'+u+' unknown</span></div>';
+    wrap.appendChild(card);
+  });
+}
+
+/* ══════════ EXPORT ══════════ */
+function exportCSV(){
+  const rows = [];
+  const header = ["Section","Criteria"].concat(VENDORS.map(v=>v.name+(v.baseline?" (current)":"")));
+  // add delta columns after each non-baseline vendor
+  const fullHeader = ["Section","Criteria"];
+  VENDORS.forEach(v=>{
+    fullHeader.push(v.name+(v.baseline?" (current)":""));
+    if (!v.baseline) fullHeader.push(v.name+" vs Corestore");
+  });
+  rows.push(fullHeader);
+  let curSection = "";
+  CRITERIA.forEach(c=>{
+    if (c.section){ curSection = c.section; return; }
+    const line = [curSection, c.label];
+    VENDORS.forEach(v=>{
+      line.push(getVal(v.id, c.id));
+      if (!v.baseline){
+        line.push(c.type==="rate" ? deltaFor(c.id, v.id).txt : "");
+      }
+    });
+    rows.push(line);
+  });
+  const csv = rows.map(r=>r.map(cell=>{
+    const s = (cell==null?"":String(cell));
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "desi-arms-pos-scorecard.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ══════════ INIT ══════════ */
+document.getElementById("exportBtn").addEventListener("click", exportCSV);
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  if (confirm("Reset all entered values? Trident 1's demo data will be restored; everything else cleared. This clears this browser's saved copy.")){
+    try { localStorage.removeItem(STORE_KEY); } catch(e){}
+    state = load();
+    buildBody(); renderTally();
+  }
+});
+
+buildHead();
+buildBody();
+renderTally();
+</script>
+</body>
+</html>
