@@ -1,0 +1,43 @@
+/* ═══ Desi Arms — shared top nav (branding element 5) ═══
+   Loaded by every tool. Colors come from each page's :root suite
+   palette (Time Tracker variables); no fallbacks by design.
+   Desktop: one horizontal row. Below 640px: "Tools" menu button.
+   Also holds the shared phone layout fix for the "← Dashboard" link. */
+.tool-nav{margin:18px auto 0;max-width:900px;text-align:center}
+.tool-nav-list{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.tool-nav a{
+  font-family:'Barlow Condensed',sans-serif;font-weight:600;
+  font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+  text-decoration:none;color:var(--primary);
+  border:1px solid var(--border);background:var(--card-bg);
+  padding:6px 14px;border-radius:6px;transition:all .2s;
+}
+.tool-nav a:hover{border-color:var(--accent);color:var(--accent)}
+.tool-nav a[aria-current="page"]{
+  background:var(--primary);color:#fff;border-color:var(--primary);
+}
+.tool-nav-toggle{
+  display:none;align-items:center;gap:8px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:14px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--primary);background:var(--card-bg);
+  border:1px solid var(--border);border-radius:6px;
+  padding:8px 18px;transition:all .2s;
+}
+.tool-nav-toggle:hover,.tool-nav.open .tool-nav-toggle{border-color:var(--accent);color:var(--accent)}
+.tool-nav a:focus-visible,.tool-nav-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+@media (max-width:640px){
+  .tool-nav-toggle{display:inline-flex}
+  .tool-nav-list{
+    display:none;flex-direction:column;align-items:stretch;gap:6px;
+    margin-top:10px;text-align:left;
+  }
+  .tool-nav.open .tool-nav-list{display:flex}
+  .tool-nav a{padding:10px 14px;font-size:14px}
+  /* "← Dashboard" (element 4): on phones the top-right absolute
+     position lands on the 260px logo, so put it in flow above it */
+  .back-link{position:static;display:inline-block;margin-bottom:14px}
+}
+@media print{.tool-nav{display:none}}
+@media (prefers-reduced-motion:reduce){.tool-nav a,.tool-nav-toggle{transition:none}}
