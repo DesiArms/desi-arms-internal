@@ -648,7 +648,7 @@ async function lookupPricing() {
     const resp = await fetch("https://desi-arms-proxy.glenn-120.workers.dev/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1500, messages: [{ role: "user", content: prompt }] })
+      body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 1500, messages: [{ role: "user", content: prompt }] })
     });
     if (!resp.ok) { const errText = await resp.text(); throw new Error("API error " + resp.status + ": " + errText.slice(0, 200)); }
     const data = await resp.json();
