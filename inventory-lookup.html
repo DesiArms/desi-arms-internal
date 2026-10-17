@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desi Arms — Inventory Lookup</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- ═══ ACCESS GATE ═══
+     Reuses the dashboard's session. No password is stored on this page.
+     Not signed in -> bounced to index.html to log in.
+     Distributor data is additionally protected by the Inventory PIN,
+     which the backend checks before issuing a read-only session. -->
+<style id="gateStyle">body{visibility:hidden}</style>
+<script>
+(function(){
+  var AUTH_KEY = 'da_auth', EXP_KEY = 'da_auth_exp', ok = false;
+  try {
+    if (sessionStorage.getItem(AUTH_KEY) === '1') {
+      ok = true;
+    } else {
+      var exp = localStorage.getItem(EXP_KEY);
+      if (localStorage.getItem(AUTH_KEY) === '1' && exp && Date.now() < parseInt(exp)) {
+        sessionStorage.setItem(AUTH_KEY, '1');
+        ok = true;
+      }
+    }
+  } catch (e) { ok = false; }
+
+  if (ok) {
+    var s = document.getElementById('gateStyle');
+    if (s) s.parentNode.removeChild(s);
+  } else {
+    location.replace('index.html');
+  }
+})();
+</script>
+
+<style>
+  :root {
+    --primary:       #1a2a3a;
+    --primary-light: #2e4057;
+    --accent:        #D32434;
+    --accent-hover:  #a01c28;
+    --red-accent:    #b22234;
+    --bg:            #f5f2ed;
+    --card-bg:       #ffffff;
+    --text:          #2c2c2c;
+    --text-muted:    #6b7280;
+    --border:        #d4cfc7;
+    --border-focus:  #D32434;
+    --error:         #c0392b;
+    --input-bg:      #faf9f7;
+    --green:         #1a8a50;
+    --amber:         #a07a10;
+    --shadow:        0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg:     0 10px 40px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.04);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .back-link {
+    position: absolute; top: 0; right: 0;
+    color: var(--text-muted); text-decoration: none;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    border: 1px solid var(--border); padding: 7px 18px;
+    border-radius: 6px;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .back-link:hover { border-color: var(--accent); color: var(--accent); }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C927A' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  .page-wrapper { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 40px 20px 60px; }
+
+  /* ── Header (suite standard) ── */
+  .form-header { text-align: center; margin-bottom: 28px; position: relative; }
+  .logo-wrapper { margin-bottom: 6px; }
+  .logo-wrapper img { max-width: 260px; height: auto; }
+  .logo-tagline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.7rem; letter-spacing: 0.2em;
+    color: var(--text-muted); text-transform: uppercase; margin-top: 4px;
+  }
+  .red-rule { width: 60px; height: 3px; background: var(--accent); margin: 12px auto; border-radius: 2px; }
+  .page-subtitle { font-size: 14px; color: var(--text-muted); }
+
+  /* ── Card ── */
+  .card { background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; margin-bottom: 20px; }
+  .section-header { display: flex; align-items: center; gap: 12px; padding: 18px 24px 14px; border-bottom: 2px solid var(--bg); flex-wrap: wrap; }
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 19px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--primary);
+  }
+  .card-body { padding: 18px 24px 22px; }
+
+  /* ── Feed health ── */
+  .feeds { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .feed-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--primary-light);
+    background: var(--bg); border-radius: 999px; padding: 3px 12px;
+  }
+  .feed-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .feed-pill.stale .feed-dot { background: #d9a400; }
+  .feed-pill.failed .feed-dot { background: var(--accent); }
+
+  /* ── Search ── */
+  .search-row { display: flex; gap: 10px; }
+  .search-row input[type="search"], .pin-row input {
+    flex: 1; min-width: 0;
+    padding: 13px 16px;
+    font-family: 'DM Sans', sans-serif; font-size: 16px; color: var(--text);
+    background: var(--input-bg);
+    border: 1.5px solid var(--border); border-radius: 10px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-row input:focus, .pin-row input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(211,36,52,0.12); }
+  .btn-primary {
+    padding: 13px 24px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+    color: #fff; background: var(--accent);
+    border: none; border-radius: 10px; cursor: pointer;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 16px rgba(211,36,52,0.25); }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
+  .btn-secondary {
+    padding: 9px 16px;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--primary-light); background: transparent;
+    border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+  .search-opts { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin-top: 12px; font-size: 13px; color: var(--text-muted); }
+  .search-opts label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .search-opts input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .hint { margin-left: auto; font-size: 12px; }
+
+  /* ── PIN ── */
+  .pin-row { display: flex; gap: 10px; margin-top: 10px; }
+  .pin-note { font-size: 13px; color: var(--text-muted); }
+  .msg { font-size: 13px; margin-top: 10px; font-weight: 500; }
+  .msg.err { color: var(--error); }
+
+  /* ── Results ── */
+  .results-head { display: flex; align-items: baseline; justify-content: space-between; margin: 4px 4px 12px; font-size: 13px; color: var(--text-muted); }
+  .item { background: var(--card-bg); border-radius: 14px; box-shadow: var(--shadow-lg); margin-bottom: 14px; overflow: hidden; }
+  .item-head { display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; padding: 16px 20px 10px; }
+  .item-name { font-weight: 700; color: var(--primary); font-size: 15px; line-height: 1.35; }
+  .item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .item-meta span + span::before { content: '·'; margin: 0 6px; color: var(--border); }
+  .mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .stock-badge {
+    flex-shrink: 0;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 10px; border-radius: 4px; white-space: nowrap;
+  }
+  .stock-badge.in { background: rgba(26,138,80,0.12); color: var(--green); }
+  .stock-badge.out { background: rgba(107,114,128,0.12); color: var(--text-muted); }
+
+  .summary-bar {
+    display: flex; flex-wrap: wrap; gap: 0;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #1a2a3a 0%, #2e4057 100%);
+  }
+  .stat { display: flex; flex-direction: column; gap: 1px; padding: 2px 18px 2px 0; margin-right: 18px; border-right: 1px solid rgba(255,255,255,0.12); }
+  .stat:last-child { border-right: none; margin-right: 0; }
+  .stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+  .stat-value { font-size: 1.05rem; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  .stat-value small { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); margin-left: 4px; }
+  .stat-value.good { color: #7fe0a8; }
+  .stat-value.warn { color: #ff6b7a; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--bg); }
+  th { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 8px 16px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  th.num, td.num { text-align: right; }
+  td { font-size: 13px; padding: 9px 16px; border-bottom: 1px solid rgba(212,207,199,0.5); vertical-align: middle; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .td-dist { font-weight: 600; color: var(--primary); }
+  .td-muted { color: var(--text-muted); font-size: 12px; }
+  .qty-zero { color: var(--text-muted); }
+  .qty-pos { color: var(--green); font-weight: 700; }
+  .flag { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; margin-left: 6px; }
+  .flag.alloc { background: rgba(201,168,76,0.18); color: var(--amber); }
+  .flag.sale { background: rgba(211,36,52,0.1); color: var(--accent); }
+  .stale-time { color: #b07a00; }
+
+  .attrs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 12px; }
+  .attr { font-size: 11px; background: var(--bg); color: var(--primary-light); padding: 2px 9px; border-radius: 999px; }
+
+  .empty-state { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 14px; }
+  .more-row { text-align: center; margin: 6px 0 20px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -3px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Customer view: hide dealer cost + margin when the screen faces a customer */
+  body.customer-view .sensitive { display: none !important; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 600px) {
+    .page-wrapper { padding: 24px 14px 48px; }
+    .card-body, .section-header { padding-left: 16px; padding-right: 16px; }
+    .search-row { flex-direction: column; }
+    .hint { display: none; }
+    .item-head { padding: 14px 16px 8px; }
+    .summary-bar { padding: 10px 16px; }
+    .stat { padding-right: 12px; margin-right: 12px; }
+    th, td { padding-left: 12px; padding-right: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+<link rel="stylesheet" href="tool-nav.css">
+<script src="tool-nav.js" defer></script>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <header class="form-header">
+    <a href="index.html" class="back-link">← Dashboard</a>
+    <div class="logo-wrapper">
+      <img src="https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.svg" onerror="this.src='https://desiarms.github.io/desi-arms-assets/Desi%20Arms%20FULL%20COLOR.png'" alt="Desi Arms" style="max-width:260px;height:auto;"/>
+    </div>
+    <div class="logo-tagline">— We've Got Your Six —</div>
+    <div class="red-rule"></div>
+    <p class="page-subtitle">Inventory Lookup — live distributor cost, MAP, and stock</p>
+    <nav class="tool-nav" aria-label="Tools" data-current="inventory-lookup.html"></nav>
+  </header>
+
+  <!-- PIN -->
+  <div class="card hidden" id="pinCard">
+    <div class="section-header"><div class="section-title">Inventory PIN</div></div>
+    <div class="card-body">
+      <p class="pin-note">Distributor pricing needs the Inventory PIN (separate from the dashboard code).</p>
+      <div class="pin-row">
+        <input type="password" id="pinInput" placeholder="Enter PIN" autocomplete="off">
+        <button class="btn-primary" id="pinBtn">Unlock</button>
+      </div>
+      <div class="search-opts">
+        <label><input type="checkbox" id="pinRemember"> Remember on this device for 30 days</label>
+      </div>
+      <div class="msg err hidden" id="pinMsg"></div>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="card hidden" id="searchCard">
+    <div class="section-header">
+      <div class="section-title">Search</div>
+      <div class="feeds" id="feeds" aria-label="Feed status"></div>
+    </div>
+    <div class="card-body">
+      <form class="search-row" id="searchForm" autocomplete="off">
+        <input type="search" id="q" placeholder="UPC, model, SKU, or keywords — e.g. glock 19 gen5" aria-label="Search inventory" autofocus>
+        <button class="btn-primary" id="searchBtn" type="submit">Search</button>
+      </form>
+      <div class="search-opts">
+        <label><input type="checkbox" id="inStock"> In stock only</label>
+        <label><input type="checkbox" id="customerView"> Customer view (hide cost)</label>
+        <button class="btn-secondary" type="button" id="lockBtn">Lock</button>
+        <span class="hint">Scan a barcode or press Enter</span>
+      </div>
+      <div class="msg err hidden" id="searchMsg"></div>
+    </div>
+  </div>
+
+  <div id="results"></div>
+  <div class="more-row hidden" id="moreRow"><button class="btn-secondary" id="moreBtn">Load more</button></div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIGURATION — Desi Arms backend (Railway). Not a secret:
+// the backend only answers with a valid staff session token.
+// ═══════════════════════════════════════════════════════════
+const API_BASE = 'https://desi-arms-backend-production.up.railway.app';
+
+const TOKEN_KEY = 'da_inv_session', VIEW_KEY = 'da_inv_customer_view';
+const PAGE = 25;
+
+const $ = (id) => document.getElementById(id);
+const state = { q: '', offset: 0, results: [] };
+
+// ── session token (never throws) ──
+function readSession(storage) {
+  try {
+    const s = JSON.parse(storage.getItem(TOKEN_KEY) || 'null');
+    return s && s.token && new Date(s.expires_at).getTime() > Date.now() ? s.token : null;
+  } catch { return null; }
+}
+const getToken = () => readSession(sessionStorage) || readSession(localStorage);
+function saveSession(s, remember) {
+  try { sessionStorage.setItem(TOKEN_KEY, JSON.stringify(s)); if (remember) localStorage.setItem(TOKEN_KEY, JSON.stringify(s)); } catch {}
+}
+function clearSession() { try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); } catch {} }
+const pref = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+// ── formatting ──
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n) => (n == null ? '—' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+function ago(ts) {
+  if (!ts) return '—';
+  const m = Math.round((Date.now() - new Date(ts).getTime()) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60);
+  if (h < 48) return h + ' hr ago';
+  return Math.round(h / 24) + ' days ago';
+}
+const ATTR_LABELS = { caliber: '', capacity: 'Cap', barrel_length: 'Bbl', action: '', finish: '', sights: '', twist: 'Twist', optic_magnification: 'Mag', nfa_thread_pattern: 'Thread' };
+
+// ── backend ──
+class SessionExpired extends Error {}
+async function api(path) {
+  const res = await fetch(API_BASE + path, { headers: { Authorization: 'Bearer ' + getToken() } });
+  if (res.status === 401 || res.status === 403) throw new SessionExpired();
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Backend error (' + res.status + '). Try again.');
+  return res.json();
+}
+function showMsg(el, text) { el.textContent = text; el.classList.toggle('hidden', !text); }
+
+// ── views ──
+function showPin(msg) {
+  $('pinCard').classList.remove('hidden');
+  $('searchCard').classList.add('hidden');
+  $('results').innerHTML = '';
+  $('moreRow').classList.add('hidden');
+  showMsg($('pinMsg'), msg || '');
+  $('pinInput').value = '';
+  $('pinInput').focus();
+}
+function showSearch() {
+  $('pinCard').classList.add('hidden');
+  $('searchCard').classList.remove('hidden');
+  $('q').focus();
+  loadFeeds();
+}
+function expired() { clearSession(); showPin('Session expired — enter the PIN again.'); }
+
+async function loadFeeds() {
+  try {
+    const data = await api('/v1/feeds/status');
+    const by = {};
+    for (const f of data.feeds) {
+      if (!f.enabled) continue;
+      const d = by[f.distributor] || (by[f.distributor] = { name: f.name, health: 'ok', inv: null });
+      if (f.health === 'failed' || (f.health === 'stale' && d.health !== 'failed')) d.health = f.health;
+      if (f.feed === 'inventory') d.inv = f.last_success;
+    }
+    $('feeds').innerHTML = Object.values(by).map((d) =>
+      `<span class="feed-pill ${d.health}" title="${esc(d.health === 'ok' ? 'Feed healthy' : 'Feed ' + d.health)}">
+         <span class="feed-dot"></span>${esc(d.name)} · ${esc(ago(d.inv))}</span>`).join('');
+  } catch (e) {
+    if (e instanceof SessionExpired) expired();
+    /* otherwise decorative; ignore */
+  }
+}
+
+function renderItem(it) {
+  const s = it.summary || {};
+  const margin = s.map_price != null && s.best_cost != null ? s.map_price - s.best_cost : null;
+  const pct = margin != null && s.map_price ? Math.round((margin / s.map_price) * 100) : null;
+  const bestName = (it.offers.find((o) => o.distributor === s.best_cost_distributor) || {}).distributor_name;
+  const meta = [it.manufacturer, it.mfg_model_no, it.upc && 'UPC ' + it.upc, it.category].filter(Boolean);
+  const attrs = Object.entries(it.attributes || {})
+    .filter(([k, v]) => k in ATTR_LABELS && v != null && v !== '')
+    .map(([k, v]) => `<span class="attr">${esc(ATTR_LABELS[k] ? ATTR_LABELS[k] + ' ' : '')}${esc(v)}</span>`).join('');
+
+  const rows = it.offers.map((o) => {
+    const staleQty = o.qty_updated_at && Date.now() - new Date(o.qty_updated_at).getTime() > 3 * 3600e3;
+    return `<tr>
+      <td class="td-dist">${esc(o.distributor_name)}${o.allocated ? '<span class="flag alloc">Allocated</span>' : ''}${o.on_sale ? '<span class="flag sale">Sale</span>' : ''}</td>
+      <td class="td-muted mono">${esc(o.sku)}</td>
+      <td class="num mono sensitive">${money(o.cost)}</td>
+      <td class="num mono">${money(o.map_price)}</td>
+      <td class="num mono">${money(o.msrp)}</td>
+      <td class="num mono ${o.quantity > 0 ? 'qty-pos' : 'qty-zero'}">${o.quantity ?? '—'}</td>
+      <td class="td-muted ${staleQty ? 'stale-time' : ''}">${esc(ago(o.qty_updated_at))}</td>
+    </tr>`;
+  }).join('');
+
+  return `<article class="item">
+    <div class="item-head">
+      <div>
+        <div class="item-name">${esc(it.name || it.mfg_model_no || 'Unnamed item')}</div>
+        <div class="item-meta">${meta.map((m) => `<span class="mono">${esc(m)}</span>`).join('')}</div>
+      </div>
+      <span class="stock-badge ${s.in_stock ? 'in' : 'out'}">${s.in_stock ? 'In stock · ' + s.total_qty : 'Out of stock'}</span>
+    </div>
+    ${attrs ? `<div class="attrs">${attrs}</div>` : ''}
+    <div class="summary-bar">
+      <div class="stat sensitive"><span class="stat-label">Best cost</span><span class="stat-value">${money(s.best_cost)}${bestName ? `<small>${esc(bestName)}</small>` : ''}</span></div>
+      <div class="stat"><span class="stat-label">MAP</span><span class="stat-value">${money(s.map_price)}</span></div>
+      <div class="stat"><span class="stat-label">MSRP</span><span class="stat-value">${money(s.msrp)}</span></div>
+      <div class="stat sensitive"><span class="stat-label">Margin @ MAP</span><span class="stat-value ${margin == null ? '' : margin > 0 ? 'good' : 'warn'}">${margin == null ? '—' : money(margin)}${pct != null ? `<small>${pct}%</small>` : ''}</span></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Distributor</th><th>SKU</th><th class="num sensitive">Cost</th><th class="num">MAP</th><th class="num">MSRP</th><th class="num">Qty</th><th>Updated</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </article>`;
+}
+
+function renderResults(hasMore) {
+  const n = state.results.length;
+  $('results').innerHTML = n
+    ? `<div class="results-head"><span>${n}${hasMore ? '+' : ''} result${n === 1 ? '' : 's'} for “${esc(state.q)}”</span></div>` + state.results.map(renderItem).join('')
+    : `<div class="card"><div class="empty-state">No matches for “${esc(state.q)}”${$('inStock').checked ? ' in stock' : ''}. Try fewer words, the model number, or the UPC.</div></div>`;
+  $('moreRow').classList.toggle('hidden', !hasMore);
+}
+
+function setBusy(busy) {
+  $('searchBtn').disabled = busy;
+  $('searchBtn').innerHTML = busy ? '<span class="spinner"></span>' : 'Search';
+  $('moreBtn').disabled = busy;
+}
+
+async function search(more = false) {
+  const q = more ? state.q : $('q').value.trim();
+  if (!q) return;
+  showMsg($('searchMsg'), '');
+  setBusy(true);
+  try {
+    if (!more) { state.q = q; state.offset = 0; state.results = []; }
+    const digits = q.replace(/[\s-]/g, '');
+    if (!more && /^\d{8,14}$/.test(digits)) {
+      const item = await api('/v1/items/by-upc/' + digits);
+      if (item) { state.results = [item]; renderResults(false); return; }
+      // not an exact UPC — fall through to text/SKU search
+    }
+    const params = new URLSearchParams({ q, limit: PAGE, offset: state.offset });
+    if ($('inStock').checked) params.set('in_stock', 'true');
+    const data = await api('/v1/items/search?' + params);
+    state.results = state.results.concat(data.results);
+    state.offset += data.results.length;
+    renderResults(data.has_more);
+  } catch (e) {
+    if (e instanceof SessionExpired) expired();
+    else showMsg($('searchMsg'), e.message.startsWith('Backend') ? e.message : 'Network error — check your connection and try again.');
+  } finally {
+    setBusy(false);
+    if (!more) $('q').select();
+  }
+}
+
+async function unlock() {
+  const pin = $('pinInput').value.trim();
+  if (!pin) return;
+  const remember = $('pinRemember').checked;
+  $('pinBtn').disabled = true;
+  try {
+    const res = await fetch(API_BASE + '/staff/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, remember }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) { saveSession(body, remember); showSearch(); return; }
+    if (res.status === 401) showPin('Wrong PIN.');
+    else if (res.status === 429) showPin(`Too many wrong PINs. Try again in ${body.retry_after_min || 15} min.`);
+    else if (res.status === 503) showPin('Staff access is not set up on the backend yet (STAFF_PIN).');
+    else showPin('Backend error (' + res.status + '). Try again.');
+  } catch {
+    showPin('Network error — try again.');
+  } finally {
+    $('pinBtn').disabled = false;
+  }
+}
+
+// ── wire up ──
+$('searchForm').addEventListener('submit', (e) => { e.preventDefault(); search(false); });
+$('moreBtn').addEventListener('click', () => search(true));
+$('pinBtn').addEventListener('click', unlock);
+$('pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
+$('inStock').addEventListener('change', () => { if (state.q) { $('q').value = state.q; search(false); } });
+$('customerView').checked = pref.get(VIEW_KEY) === '1';
+document.body.classList.toggle('customer-view', $('customerView').checked);
+$('customerView').addEventListener('change', (e) => {
+  document.body.classList.toggle('customer-view', e.target.checked);
+  pref.set(VIEW_KEY, e.target.checked ? '1' : '0');
+});
+$('lockBtn').addEventListener('click', () => { clearSession(); showPin(); });
+
+if (getToken()) showSearch(); else showPin();
+</script>
+</body>
+</html>
