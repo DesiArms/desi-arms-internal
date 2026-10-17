@@ -6,6 +6,7 @@
 (function () {
   var TOOLS = [
     ['index.html',                  'Dashboard'],
+    ['inventory-lookup.html',       'Inventory Lookup'],
     ['customization-pricing.html',  'Laser Engraving & Cerakote'],
     ['used-firearm-pricing.html',   'Used Firearm Pricing'],
     ['suppressor-comparison.html',  'Suppressor Comparison'],
