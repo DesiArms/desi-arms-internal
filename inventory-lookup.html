@@ -10,7 +10,7 @@
      Reuses the dashboard's session. No password is stored on this page.
      Not signed in -> bounced to index.html to log in.
      Distributor data is additionally protected by the Inventory PIN,
-     which is checked server-side by the Apps Script proxy. -->
+     which the backend checks before issuing a read-only session. -->
 <style id="gateStyle">body{visibility:hidden}</style>
 <script>
 (function(){
@@ -290,45 +290,37 @@
   <div id="results"></div>
   <div class="more-row hidden" id="moreRow"><button class="btn-secondary" id="moreBtn">Load more</button></div>
 
-  <!-- SETUP NOTICE -->
-  <div class="card hidden" id="setupCard">
-    <div class="card-body">
-      <p><strong>Not connected yet.</strong> Paste the Apps Script web app URL into <code>PROXY_URL</code> at the bottom of this file.</p>
-    </div>
-  </div>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// CONFIGURATION — Inventory proxy (separate Apps Script project)
+// CONFIGURATION — Desi Arms backend (Railway). Not a secret:
+// the backend only answers with a valid staff session token.
 // ═══════════════════════════════════════════════════════════
-const PROXY_URL = '';
+const API_BASE = 'https://desi-arms-backend-production.up.railway.app';
 
-const PIN_KEY = 'da_inv_pin', PIN_EXP_KEY = 'da_inv_pin_exp', VIEW_KEY = 'da_inv_customer_view';
+const TOKEN_KEY = 'da_inv_session', VIEW_KEY = 'da_inv_customer_view';
 const PAGE = 25;
 
 const $ = (id) => document.getElementById(id);
 const state = { q: '', offset: 0, results: [] };
 
-// ── storage (never throws) ──
-const store = {
-  get(k, s) { try { return (s ? sessionStorage : localStorage).getItem(k); } catch { return null; } },
-  set(k, v, s) { try { (s ? sessionStorage : localStorage).setItem(k, v); } catch {} },
-  del(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch {} },
+// ── session token (never throws) ──
+function readSession(storage) {
+  try {
+    const s = JSON.parse(storage.getItem(TOKEN_KEY) || 'null');
+    return s && s.token && new Date(s.expires_at).getTime() > Date.now() ? s.token : null;
+  } catch { return null; }
+}
+const getToken = () => readSession(sessionStorage) || readSession(localStorage);
+function saveSession(s, remember) {
+  try { sessionStorage.setItem(TOKEN_KEY, JSON.stringify(s)); if (remember) localStorage.setItem(TOKEN_KEY, JSON.stringify(s)); } catch {}
+}
+function clearSession() { try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); } catch {} }
+const pref = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
 };
-function getPin() {
-  const s = store.get(PIN_KEY, true);
-  if (s) return s;
-  const exp = parseInt(store.get(PIN_EXP_KEY) || '0', 10);
-  const l = store.get(PIN_KEY);
-  if (l && Date.now() < exp) return l;
-  return null;
-}
-function savePin(pin, remember) {
-  store.set(PIN_KEY, pin, true);
-  if (remember) { store.set(PIN_KEY, pin); store.set(PIN_EXP_KEY, String(Date.now() + 30 * 864e5)); }
-}
-function clearPin() { store.del(PIN_KEY); store.del(PIN_EXP_KEY); }
 
 // ── formatting ──
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -344,23 +336,15 @@ function ago(ts) {
 }
 const ATTR_LABELS = { caliber: '', capacity: 'Cap', barrel_length: 'Bbl', action: '', finish: '', sights: '', twist: 'Twist', optic_magnification: 'Mag', nfa_thread_pattern: 'Thread' };
 
-// ── proxy ──
-async function call(action, params = {}) {
-  const res = await fetch(PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, pin: getPin(), ...params }),
-  });
+// ── backend ──
+class SessionExpired extends Error {}
+async function api(path) {
+  const res = await fetch(API_BASE + path, { headers: { Authorization: 'Bearer ' + getToken() } });
+  if (res.status === 401 || res.status === 403) throw new SessionExpired();
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Backend error (' + res.status + '). Try again.');
   return res.json();
 }
-const ERRORS = {
-  locked: 'Too many wrong PINs. Locked for 15 minutes.',
-  proxy_not_configured: 'Proxy is missing its Script Properties (API_BASE, API_KEY, STAFF_PIN).',
-  backend_unreachable: 'Backend is unreachable. Check Railway.',
-  backend_401: 'Backend rejected the proxy key. Check API_KEY in the Apps Script properties.',
-  bad_upc: 'That doesn\'t look like a UPC.',
-};
-function errText(e) { return ERRORS[e] || (String(e).startsWith('backend_') ? 'Backend error (' + e + '). Try again.' : 'Something went wrong (' + e + ').'); }
 function showMsg(el, text) { el.textContent = text; el.classList.toggle('hidden', !text); }
 
 // ── views ──
@@ -379,18 +363,13 @@ function showSearch() {
   $('q').focus();
   loadFeeds();
 }
-function handleAuthError(r) {
-  if (r.error === 'bad_pin') { clearPin(); showPin('Wrong PIN.'); return true; }
-  if (r.error === 'locked') { clearPin(); showPin(ERRORS.locked); return true; }
-  return false;
-}
+function expired() { clearSession(); showPin('Session expired — enter the PIN again.'); }
 
 async function loadFeeds() {
   try {
-    const r = await call('status');
-    if (!r.ok) { if (!handleAuthError(r)) $('feeds').innerHTML = ''; return; }
+    const data = await api('/v1/feeds/status');
     const by = {};
-    for (const f of r.data.feeds) {
+    for (const f of data.feeds) {
       if (!f.enabled) continue;
       const d = by[f.distributor] || (by[f.distributor] = { name: f.name, health: 'ok', inv: null });
       if (f.health === 'failed' || (f.health === 'stale' && d.health !== 'failed')) d.health = f.health;
@@ -399,7 +378,10 @@ async function loadFeeds() {
     $('feeds').innerHTML = Object.values(by).map((d) =>
       `<span class="feed-pill ${d.health}" title="${esc(d.health === 'ok' ? 'Feed healthy' : 'Feed ' + d.health)}">
          <span class="feed-dot"></span>${esc(d.name)} · ${esc(ago(d.inv))}</span>`).join('');
-  } catch { /* status is decorative; ignore */ }
+  } catch (e) {
+    if (e instanceof SessionExpired) expired();
+    /* otherwise decorative; ignore */
+  }
 }
 
 function renderItem(it) {
@@ -470,18 +452,19 @@ async function search(more = false) {
     if (!more) { state.q = q; state.offset = 0; state.results = []; }
     const digits = q.replace(/[\s-]/g, '');
     if (!more && /^\d{8,14}$/.test(digits)) {
-      const r = await call('upc', { upc: digits });
-      if (!r.ok) { if (!handleAuthError(r)) showMsg($('searchMsg'), errText(r.error)); return; }
-      if (r.data) { state.results = [r.data]; renderResults(false); return; }
+      const item = await api('/v1/items/by-upc/' + digits);
+      if (item) { state.results = [item]; renderResults(false); return; }
       // not an exact UPC — fall through to text/SKU search
     }
-    const r = await call('search', { q, limit: PAGE, offset: state.offset, in_stock: $('inStock').checked });
-    if (!r.ok) { if (!handleAuthError(r)) showMsg($('searchMsg'), errText(r.error)); return; }
-    state.results = state.results.concat(r.data.results);
-    state.offset += r.data.results.length;
-    renderResults(r.data.has_more);
-  } catch {
-    showMsg($('searchMsg'), 'Network error — check your connection and try again.');
+    const params = new URLSearchParams({ q, limit: PAGE, offset: state.offset });
+    if ($('inStock').checked) params.set('in_stock', 'true');
+    const data = await api('/v1/items/search?' + params);
+    state.results = state.results.concat(data.results);
+    state.offset += data.results.length;
+    renderResults(data.has_more);
+  } catch (e) {
+    if (e instanceof SessionExpired) expired();
+    else showMsg($('searchMsg'), e.message.startsWith('Backend') ? e.message : 'Network error — check your connection and try again.');
   } finally {
     setBusy(false);
     if (!more) $('q').select();
@@ -491,14 +474,21 @@ async function search(more = false) {
 async function unlock() {
   const pin = $('pinInput').value.trim();
   if (!pin) return;
+  const remember = $('pinRemember').checked;
   $('pinBtn').disabled = true;
   try {
-    savePin(pin, $('pinRemember').checked);
-    const r = await call('ping');
-    if (r.ok) showSearch();
-    else { clearPin(); showPin(r.error === 'bad_pin' ? 'Wrong PIN.' : errText(r.error)); }
+    const res = await fetch(API_BASE + '/staff/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, remember }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) { saveSession(body, remember); showSearch(); return; }
+    if (res.status === 401) showPin('Wrong PIN.');
+    else if (res.status === 429) showPin(`Too many wrong PINs. Try again in ${body.retry_after_min || 15} min.`);
+    else if (res.status === 503) showPin('Staff access is not set up on the backend yet (STAFF_PIN).');
+    else showPin('Backend error (' + res.status + '). Try again.');
   } catch {
-    clearPin();
     showPin('Network error — try again.');
   } finally {
     $('pinBtn').disabled = false;
@@ -511,17 +501,15 @@ $('moreBtn').addEventListener('click', () => search(true));
 $('pinBtn').addEventListener('click', unlock);
 $('pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
 $('inStock').addEventListener('change', () => { if (state.q) { $('q').value = state.q; search(false); } });
-$('customerView').checked = store.get(VIEW_KEY) === '1';
+$('customerView').checked = pref.get(VIEW_KEY) === '1';
 document.body.classList.toggle('customer-view', $('customerView').checked);
 $('customerView').addEventListener('change', (e) => {
   document.body.classList.toggle('customer-view', e.target.checked);
-  store.set(VIEW_KEY, e.target.checked ? '1' : '0');
+  pref.set(VIEW_KEY, e.target.checked ? '1' : '0');
 });
-$('lockBtn').addEventListener('click', () => { clearPin(); showPin(); });
+$('lockBtn').addEventListener('click', () => { clearSession(); showPin(); });
 
-if (!PROXY_URL) $('setupCard').classList.remove('hidden');
-else if (getPin()) showSearch();
-else showPin();
+if (getToken()) showSearch(); else showPin();
 </script>
 </body>
 </html>
