@@ -205,6 +205,7 @@
   .flag { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; margin-left: 6px; }
   .flag.alloc { background: rgba(201,168,76,0.18); color: var(--amber); }
   .flag.sale { background: rgba(211,36,52,0.1); color: var(--accent); }
+  .flag.eshow { background: rgba(30,58,95,0.12); color: #1e3a5f; }
   .stale-time { color: #b07a00; }
 
   .attrs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 12px; }
@@ -394,10 +395,14 @@ function renderItem(it) {
     .filter(([k, v]) => k in ATTR_LABELS && v != null && v !== '')
     .map(([k, v]) => `<span class="attr">${esc(ATTR_LABELS[k] ? ATTR_LABELS[k] + ' ' : '')}${esc(v)}</span>`).join('');
 
+  // RSR lists e-show stock under a second SKU: the regular SKU plus a trailing "E".
+  const rsrSkus = new Set(it.offers.filter((o) => o.distributor === 'rsr').map((o) => String(o.sku || '').toUpperCase()));
+  const isEshow = (o) => o.distributor === 'rsr' && /E$/i.test(o.sku || '') && rsrSkus.has(String(o.sku).toUpperCase().slice(0, -1));
+
   const rows = it.offers.map((o) => {
     const staleQty = o.qty_updated_at && Date.now() - new Date(o.qty_updated_at).getTime() > 3 * 3600e3;
     return `<tr>
-      <td class="td-dist">${esc(o.distributor_name)}${o.allocated ? '<span class="flag alloc">Allocated</span>' : ''}${o.on_sale ? '<span class="flag sale">Sale</span>' : ''}</td>
+      <td class="td-dist">${esc(o.distributor_name)}${isEshow(o) ? '<span class="flag eshow" title="RSR e-show SKU — order this SKU to get this stock">E-Show</span>' : ''}${o.allocated ? '<span class="flag alloc">Allocated</span>' : ''}${o.on_sale ? '<span class="flag sale">Sale</span>' : ''}</td>
       <td class="td-muted mono">${esc(o.sku)}</td>
       <td class="num mono sensitive">${money(o.cost)}</td>
       <td class="num mono">${money(o.map_price)}</td>
