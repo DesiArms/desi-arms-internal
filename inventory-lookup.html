@@ -157,6 +157,15 @@
 
   /* ── PIN ── */
   .pin-row { display: flex; gap: 10px; margin-top: 10px; }
+  .filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .filters select {
+    width: 100%; min-width: 0; padding: 9px 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text);
+    background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 8px; outline: none;
+  }
+  .filters select:focus { border-color: var(--border-focus); }
+  .filters select.active { border-color: var(--primary); font-weight: 600; }
+  .link-btn { background: none; border: none; padding: 0; font: inherit; font-size: 13px; color: var(--accent); cursor: pointer; text-decoration: underline; }
   .pin-note { font-size: 13px; color: var(--text-muted); }
   .msg { font-size: 13px; margin-top: 10px; font-weight: 500; }
   .msg.err { color: var(--error); }
@@ -211,6 +220,15 @@
   .attrs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 12px; }
   .attr { font-size: 11px; background: var(--bg); color: var(--primary-light); padding: 2px 9px; border-radius: 999px; }
 
+  .alts { border-top: 2px solid var(--bg); padding: 12px 20px 14px; }
+  .alts-title { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--primary); margin-bottom: 6px; }
+  .alts-note { font-size: 12px; color: var(--text-muted); }
+  .alts td { font-size: 12.5px; padding: 7px 10px; }
+  .alts td { white-space: normal; }
+  .alts td:first-child { padding-left: 0; width: 58%; }
+  .alt-link { color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; text-decoration-color: var(--border); }
+  .alt-link:hover { text-decoration-color: var(--primary); }
+
   .empty-state { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 14px; }
   .more-row { text-align: center; margin: 6px 0 20px; }
   .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -3px; }
@@ -226,6 +244,10 @@
     .card-body, .section-header { padding-left: 16px; padding-right: 16px; }
     .search-row { flex-direction: column; }
     .hint { display: none; }
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .alts { padding: 12px 16px; }
+    .alts .alt-map { display: none; }
+    .alts td { padding-left: 6px; padding-right: 6px; }
     .item-head { padding: 14px 16px 8px; }
     .summary-bar { padding: 10px 16px; }
     .stat { padding-right: 12px; margin-right: 12px; }
@@ -275,7 +297,7 @@
     </div>
     <div class="card-body">
       <form class="search-row" id="searchForm" autocomplete="off">
-        <input type="search" id="q" placeholder="UPC, model, SKU, or keywords — e.g. glock 19 gen5" aria-label="Search inventory" autofocus>
+        <input type="search" id="q" placeholder="UPC, model, SKU, or keywords — or just pick filters below" aria-label="Search inventory" autofocus>
         <button class="btn-primary" id="searchBtn" type="submit">Search</button>
       </form>
       <div class="search-opts">
@@ -283,6 +305,12 @@
         <label><input type="checkbox" id="customerView"> Customer view (hide cost)</label>
         <button class="btn-secondary" type="button" id="lockBtn">Lock</button>
         <span class="hint">Scan a barcode or press Enter</span>
+      </div>
+      <div class="filters" id="filters" aria-label="Filters">
+        <select id="fCategory" data-key="category" aria-label="Category"><option value="">All categories</option></select>
+        <select id="fManufacturer" data-key="manufacturer" aria-label="Manufacturer"><option value="">All manufacturers</option></select>
+        <select id="fCaliber" data-key="caliber" aria-label="Caliber"><option value="">All calibers</option></select>
+        <select id="fDistributor" data-key="distributor" aria-label="Distributor"><option value="">All distributors</option></select>
       </div>
       <div class="msg err hidden" id="searchMsg"></div>
     </div>
@@ -304,7 +332,9 @@ const TOKEN_KEY = 'da_inv_session', VIEW_KEY = 'da_inv_customer_view';
 const PAGE = 25;
 
 const $ = (id) => document.getElementById(id);
-const state = { q: '', offset: 0, results: [] };
+const state = { q: '', offset: 0, results: [], filters: {} };
+const FILTER_IDS = ['fCategory', 'fManufacturer', 'fCaliber', 'fDistributor'];
+const ALT_GROUPS = new Set(['handgun', 'rifle', 'shotgun', 'nfa', 'ammo', 'optics', 'magazines']);
 
 // ── session token (never throws) ──
 function readSession(storage) {
@@ -363,6 +393,7 @@ function showSearch() {
   $('searchCard').classList.remove('hidden');
   $('q').focus();
   loadFeeds();
+  loadFacets();
 }
 function expired() { clearSession(); showPin('Session expired — enter the PIN again.'); }
 
@@ -431,15 +462,83 @@ function renderItem(it) {
       <thead><tr><th>Distributor</th><th>SKU</th><th class="num sensitive">Cost</th><th class="num">MAP</th><th class="num">MSRP</th><th class="num">Qty</th><th>Updated</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
+    ${!s.in_stock && ALT_GROUPS.has(it.category_group) ? `<div class="alts" data-alt-for="${esc(it.id)}">
+      <button class="btn-secondary" type="button" data-show-alts="${esc(it.id)}">Show similar in stock</button>
+    </div>` : ''}
   </article>`;
+}
+
+// "Similar in stock": same category group and caliber, available, cost within ±25%.
+async function loadAlternatives(id) {
+  const box = document.querySelector(`[data-alt-for="${CSS.escape(String(id))}"]`);
+  if (!box) return;
+  box.innerHTML = '<div class="alts-note">Finding similar items in stock…</div>';
+  try {
+    const data = await api(`/v1/items/${encodeURIComponent(id)}/alternatives?limit=5`);
+    const list = (data && data.results) || [];
+    const b = (data && data.basis) || {};
+    const what = [b.caliber, ({ handgun: 'handguns', rifle: 'rifles', shotgun: 'shotguns', nfa: 'suppressors / NFA', ammo: 'ammo', optics: 'optics', magazines: 'magazines' })[b.category_group]].filter(Boolean).join(' ');
+    if (!list.length) { box.innerHTML = `<div class="alts-title">Similar in stock</div><div class="alts-note">Nothing comparable in stock right now${what ? ' (' + esc(what) + ', similar cost)' : ''}.</div>`; return; }
+    box.innerHTML = `<div class="alts-title">Similar in stock${what ? ' — ' + esc(what) : ''}</div>
+      <div class="table-wrap"><table><tbody>${list.map((a) => {
+        const sm = a.summary || {};
+        const dist = (a.offers.find((o) => o.distributor === sm.best_cost_distributor) || {}).distributor_name || '';
+        return `<tr>
+          <td><span class="alt-link" data-upc="${esc(a.upc || '')}" data-name="${esc(a.name || '')}">${esc(a.name || a.mfg_model_no)}</span><div class="td-muted">${esc([a.manufacturer, a.upc && 'UPC ' + a.upc].filter(Boolean).join(' · '))}</div></td>
+          <td class="num mono sensitive">${money(sm.best_cost)}<div class="td-muted">${esc(dist)}</div></td>
+          <td class="num mono alt-map">${sm.map_price != null ? 'MAP ' + money(sm.map_price) : ''}</td>
+          <td class="num mono qty-pos">${esc(sm.total_qty)}</td>
+        </tr>`; }).join('')}</tbody></table></div>`;
+  } catch (e) {
+    if (e instanceof SessionExpired) expired();
+    else box.innerHTML = '<div class="alts-note">Couldn\'t load similar items — try again.</div>';
+  }
+}
+
+// ── filters ──
+function readFilters() {
+  const f = {};
+  for (const id of FILTER_IDS) { const el = $(id); if (el.value) f[el.dataset.key] = el.value; el.classList.toggle('active', !!el.value); }
+  return f;
+}
+const hasFilters = (f) => Object.keys(f).length > 0;
+
+async function loadFacets() {
+  const params = new URLSearchParams(state.filters);
+  if (state.q) params.set('q', state.q);
+  if ($('inStock').checked) params.set('in_stock', 'true');
+  try {
+    const data = await api('/v1/facets?' + params);
+    if (!data) return;
+    const fill = (id, list, allLabel) => {
+      const el = $(id), cur = el.value;
+      const opts = list.map((o) => `<option value="${esc(o.key)}">${esc(o.label)} (${o.count})</option>`);
+      if (cur && !list.some((o) => o.key === cur)) opts.unshift(`<option value="${esc(cur)}">${esc(cur)} (0)</option>`);
+      el.innerHTML = `<option value="">${allLabel}</option>` + opts.join('');
+      el.value = cur;
+    };
+    fill('fCategory', data.categories, 'All categories');
+    fill('fManufacturer', data.manufacturers, 'All manufacturers');
+    fill('fCaliber', data.calibers, 'All calibers');
+    fill('fDistributor', data.distributors, 'All distributors');
+  } catch (e) { if (e instanceof SessionExpired) expired(); }
+}
+
+function describeSearch() {
+  const parts = [];
+  if (state.q) parts.push(`“${esc(state.q)}”`);
+  for (const id of FILTER_IDS) { const el = $(id); if (el.value) parts.push(esc(el.options[el.selectedIndex].text.replace(/\s\(\d+\)$/, ''))); }
+  return parts.join(' · ');
 }
 
 function renderResults(hasMore) {
   const n = state.results.length;
   $('results').innerHTML = n
-    ? `<div class="results-head"><span>${n}${hasMore ? '+' : ''} result${n === 1 ? '' : 's'} for “${esc(state.q)}”</span></div>` + state.results.map(renderItem).join('')
-    : `<div class="card"><div class="empty-state">No matches for “${esc(state.q)}”${$('inStock').checked ? ' in stock' : ''}. Try fewer words, the model number, or the UPC.</div></div>`;
+    ? `<div class="results-head"><span>${n}${hasMore ? '+' : ''} result${n === 1 ? '' : 's'} for ${describeSearch()}</span>${hasFilters(state.filters) ? '<button class="link-btn" type="button" id="clearFilters">Clear filters</button>' : ''}</div>` + state.results.map(renderItem).join('')
+    : `<div class="card"><div class="empty-state">No matches for ${describeSearch()}${$('inStock').checked ? ' in stock' : ''}. Try fewer words, the model number, the UPC, or fewer filters.${hasFilters(state.filters) ? ' <button class="link-btn" type="button" id="clearFilters">Clear filters</button>' : ''}</div></div>`;
   $('moreRow').classList.toggle('hidden', !hasMore);
+  // One item (UPC lookup or a single match) that's out of stock: show similar items right away.
+  if (n === 1 && !state.results[0].summary?.in_stock) loadAlternatives(state.results[0].id);
 }
 
 function setBusy(busy) {
@@ -450,18 +549,20 @@ function setBusy(busy) {
 
 async function search(more = false) {
   const q = more ? state.q : $('q').value.trim();
-  if (!q) return;
+  const filters = more ? state.filters : readFilters();
+  if (!q && !hasFilters(filters)) return;
   showMsg($('searchMsg'), '');
   setBusy(true);
   try {
-    if (!more) { state.q = q; state.offset = 0; state.results = []; }
+    if (!more) { state.q = q; state.filters = filters; state.offset = 0; state.results = []; loadFacets(); }
     const digits = q.replace(/[\s-]/g, '');
-    if (!more && /^\d{8,14}$/.test(digits)) {
+    if (!more && !hasFilters(filters) && /^\d{8,14}$/.test(digits)) {
       const item = await api('/v1/items/by-upc/' + digits);
       if (item) { state.results = [item]; renderResults(false); return; }
       // not an exact UPC — fall through to text/SKU search
     }
-    const params = new URLSearchParams({ q, limit: PAGE, offset: state.offset });
+    const params = new URLSearchParams({ ...state.filters, limit: PAGE, offset: state.offset });
+    if (q) params.set('q', q);
     if ($('inStock').checked) params.set('in_stock', 'true');
     const data = await api('/v1/items/search?' + params);
     state.results = state.results.concat(data.results);
@@ -472,7 +573,7 @@ async function search(more = false) {
     else showMsg($('searchMsg'), e.message.startsWith('Backend') ? e.message : 'Network error — check your connection and try again.');
   } finally {
     setBusy(false);
-    if (!more) $('q').select();
+    if (!more && document.activeElement === $('q')) $('q').select();
   }
 }
 
@@ -505,7 +606,21 @@ $('searchForm').addEventListener('submit', (e) => { e.preventDefault(); search(f
 $('moreBtn').addEventListener('click', () => search(true));
 $('pinBtn').addEventListener('click', unlock);
 $('pinInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
-$('inStock').addEventListener('change', () => { if (state.q) { $('q').value = state.q; search(false); } });
+// Options re-run whatever is in the search box now (plus the filters); with nothing to search, just refresh the choices.
+const rerun = () => { if ($('q').value.trim() || hasFilters(readFilters())) search(false); else { state.q = ''; state.filters = {}; loadFacets(); } };
+$('inStock').addEventListener('change', rerun);
+for (const id of FILTER_IDS) $(id).addEventListener('change', rerun);
+$('results').addEventListener('click', (e) => {
+  const altBtn = e.target.closest('[data-show-alts]');
+  if (altBtn) { loadAlternatives(altBtn.dataset.showAlts); return; }
+  const link = e.target.closest('.alt-link');
+  if (link) { for (const id of FILTER_IDS) $(id).value = ''; $('q').value = link.dataset.upc || link.dataset.name; search(false); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (e.target.id === 'clearFilters') {
+    for (const id of FILTER_IDS) $(id).value = '';
+    if ($('q').value.trim()) search(false);
+    else { state.q = ''; state.filters = {}; readFilters(); $('results').innerHTML = ''; $('moreRow').classList.add('hidden'); loadFacets(); }
+  }
+});
 $('customerView').checked = pref.get(VIEW_KEY) === '1';
 document.body.classList.toggle('customer-view', $('customerView').checked);
 $('customerView').addEventListener('change', (e) => {
