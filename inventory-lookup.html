@@ -529,17 +529,22 @@ const ADMIN_KEY = 'da_inv_admin';
 function getAdmin() { try { const a = JSON.parse(sessionStorage.getItem(ADMIN_KEY) || 'null'); return a && new Date(a.expires_at) > new Date() ? a.token : null; } catch { return null; } }
 function setPricingMsg(text, ok) { const el = $('pricingMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
+// Without an admin PIN on the backend, the staff session can edit; with one, the admin PIN unlocks editing.
+let pricingEditor = 'staff';
+const editToken = () => (pricingEditor === 'staff' ? getToken() : getAdmin());
+
 async function openPricing() {
   $('pricingCard').classList.remove('hidden');
   setPricingMsg('');
-  const admin = getAdmin();
-  $('adminPinRow').classList.toggle('hidden', !!admin);
-  $('pricingSave').classList.toggle('hidden', !admin);
   try {
     const data = await api('/v1/pricing/targets');
+    pricingEditor = data.editable_by || 'admin';
+    const canEdit = !!editToken();
+    $('adminPinRow').classList.toggle('hidden', canEdit);
+    $('pricingSave').classList.toggle('hidden', !canEdit);
     $('pricingGrid').innerHTML = data.targets.map((t) =>
-      `<label>${esc(t.label)}<span><input type="number" min="0" max="89.99" step="0.5" data-key="${esc(t.key)}" value="${t.margin_pct ?? ''}" ${admin ? '' : 'disabled'}> %</span></label>`).join('');
-    if (!admin) setPricingMsg('Enter the admin PIN to change targets.', true);
+      `<label>${esc(t.label)}<span><input type="number" min="0" max="89.99" step="0.5" data-key="${esc(t.key)}" value="${t.margin_pct ?? ''}" ${canEdit ? '' : 'disabled'}> %</span></label>`).join('');
+    if (!canEdit) setPricingMsg('Enter the admin PIN to change targets.', true);
   } catch (e) { if (e instanceof SessionExpired) expired(); else setPricingMsg(e.message); }
 }
 
@@ -562,7 +567,8 @@ async function savePricing() {
   if (targets.some((t) => !(t.margin_pct >= 0 && t.margin_pct < 90))) { setPricingMsg('Margins must be between 0 and 89.99%.'); return; }
   $('pricingSave').disabled = true;
   try {
-    const res = await fetch(API_BASE + '/v1/pricing/targets', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getAdmin() }, body: JSON.stringify({ targets }) });
+    const res = await fetch(API_BASE + '/v1/pricing/targets', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + editToken() }, body: JSON.stringify({ targets }) });
+    if (res.status === 401 && pricingEditor === 'staff') { expired(); return; }
     if (res.status === 401 || res.status === 403) { try { sessionStorage.removeItem(ADMIN_KEY); } catch {} setPricingMsg('Admin session expired — enter the admin PIN again.'); openPricing(); return; }
     if (!res.ok) { const b = await res.json().catch(() => ({})); setPricingMsg(b.error || 'Save failed (' + res.status + ').'); return; }
     setPricingMsg('Saved. Suggested prices use the new targets now.', true);
