@@ -167,6 +167,14 @@
   .filters select.active { border-color: var(--primary); font-weight: 600; }
   .link-btn { background: none; border: none; padding: 0; font: inherit; font-size: 13px; color: var(--accent); cursor: pointer; text-decoration: underline; }
   .pin-note { font-size: 13px; color: var(--text-muted); }
+  .stat-value.sell { color: #ffd88a; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 16px; margin-top: 8px; }
+  .pricing-grid label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--primary); font-weight: 600; background: var(--bg); padding: 8px 10px; border-radius: 8px; }
+  .pricing-grid label > span { white-space: nowrap; flex-shrink: 0; }
+  .pricing-grid input { width: 72px; padding: 6px 8px; font: inherit; font-weight: 600; text-align: right; border: 1.5px solid var(--border); border-radius: 6px; background: var(--input-bg); }
+  .pricing-grid input:focus { outline: none; border-color: var(--border-focus); }
+  .pricing-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .msg.ok { color: var(--green); }
   .msg { font-size: 13px; margin-top: 10px; font-weight: 500; }
   .msg.err { color: var(--error); }
 
@@ -304,6 +312,7 @@
         <label><input type="checkbox" id="inStock"> In stock only</label>
         <label><input type="checkbox" id="customerView"> Customer view (hide cost)</label>
         <button class="btn-secondary" type="button" id="lockBtn">Lock</button>
+        <button class="btn-secondary" type="button" id="pricingBtn">Pricing</button>
         <span class="hint">Scan a barcode or press Enter</span>
       </div>
       <div class="filters" id="filters" aria-label="Filters">
@@ -313,6 +322,26 @@
         <select id="fDistributor" data-key="distributor" aria-label="Distributor"><option value="">All distributors</option></select>
       </div>
       <div class="msg err hidden" id="searchMsg"></div>
+    </div>
+  </div>
+
+  <!-- PRICING SETTINGS (admin PIN) -->
+  <div class="card hidden" id="pricingCard">
+    <div class="section-header">
+      <div class="section-title">Pricing settings</div>
+      <button class="btn-secondary" type="button" id="pricingClose" style="margin-left:auto">Close</button>
+    </div>
+    <div class="card-body">
+      <p class="pin-note">Target margin is a percent of the sell price. Suggested sell = best cost ÷ (1 − margin), rounded up to .99, and never below MAP.</p>
+      <div id="adminPinRow" class="pin-row">
+        <input type="password" id="adminPin" placeholder="Admin PIN" autocomplete="off">
+        <button class="btn-primary" type="button" id="adminUnlock">Unlock</button>
+      </div>
+      <div class="pricing-grid" id="pricingGrid"></div>
+      <div class="pricing-actions">
+        <button class="btn-primary hidden" type="button" id="pricingSave">Save targets</button>
+        <span class="msg" id="pricingMsg"></span>
+      </div>
     </div>
   </div>
 
@@ -418,8 +447,7 @@ async function loadFeeds() {
 
 function renderItem(it) {
   const s = it.summary || {};
-  const margin = s.map_price != null && s.best_cost != null ? s.map_price - s.best_cost : null;
-  const pct = margin != null && s.map_price ? Math.round((margin / s.map_price) * 100) : null;
+  const p = s.pricing || null;
   const bestName = (it.offers.find((o) => o.distributor === s.best_cost_distributor) || {}).distributor_name;
   const meta = [it.manufacturer, it.mfg_model_no, it.upc && 'UPC ' + it.upc, it.category].filter(Boolean);
   const attrs = Object.entries(it.attributes || {})
@@ -456,7 +484,8 @@ function renderItem(it) {
       <div class="stat sensitive"><span class="stat-label">Best cost</span><span class="stat-value">${money(s.best_cost)}${bestName ? `<small>${esc(bestName)}</small>` : ''}</span></div>
       <div class="stat"><span class="stat-label">MAP</span><span class="stat-value">${money(s.map_price)}</span></div>
       <div class="stat"><span class="stat-label">MSRP</span><span class="stat-value">${money(s.msrp)}</span></div>
-      <div class="stat sensitive"><span class="stat-label">Margin @ MAP</span><span class="stat-value ${margin == null ? '' : margin > 0 ? 'good' : 'warn'}">${margin == null ? '—' : money(margin)}${pct != null ? `<small>${pct}%</small>` : ''}</span></div>
+      <div class="stat"><span class="stat-label">Suggested sell</span><span class="stat-value sell">${p ? money(p.suggested_price) : '—'}${p ? `<small class="sensitive">${p.price_basis === 'map' ? 'MAP' : p.target_margin_pct + '% target'}</small>` : ''}</span></div>
+      <div class="stat sensitive"><span class="stat-label">Margin</span><span class="stat-value ${!p ? '' : p.margin_amount > 0 ? 'good' : 'warn'}">${p ? money(p.margin_amount) : '—'}${p ? `<small>${p.margin_pct}%${p.cost_basis_in_stock ? '' : ' · no stock'}</small>` : ''}</span></div>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Distributor</th><th>SKU</th><th class="num sensitive">Cost</th><th class="num">MAP</th><th class="num">MSRP</th><th class="num">Qty</th><th>Updated</th></tr></thead>
@@ -493,6 +522,53 @@ async function loadAlternatives(id) {
     if (e instanceof SessionExpired) expired();
     else box.innerHTML = '<div class="alts-note">Couldn\'t load similar items — try again.</div>';
   }
+}
+
+// ── pricing settings (admin PIN; admin session kept for this tab only) ──
+const ADMIN_KEY = 'da_inv_admin';
+function getAdmin() { try { const a = JSON.parse(sessionStorage.getItem(ADMIN_KEY) || 'null'); return a && new Date(a.expires_at) > new Date() ? a.token : null; } catch { return null; } }
+function setPricingMsg(text, ok) { const el = $('pricingMsg'); el.textContent = text || ''; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+
+async function openPricing() {
+  $('pricingCard').classList.remove('hidden');
+  setPricingMsg('');
+  const admin = getAdmin();
+  $('adminPinRow').classList.toggle('hidden', !!admin);
+  $('pricingSave').classList.toggle('hidden', !admin);
+  try {
+    const data = await api('/v1/pricing/targets');
+    $('pricingGrid').innerHTML = data.targets.map((t) =>
+      `<label>${esc(t.label)}<span><input type="number" min="0" max="89.99" step="0.5" data-key="${esc(t.key)}" value="${t.margin_pct ?? ''}" ${admin ? '' : 'disabled'}> %</span></label>`).join('');
+    if (!admin) setPricingMsg('Enter the admin PIN to change targets.', true);
+  } catch (e) { if (e instanceof SessionExpired) expired(); else setPricingMsg(e.message); }
+}
+
+async function adminUnlock() {
+  const pin = $('adminPin').value.trim();
+  if (!pin) return;
+  const res = await fetch(API_BASE + '/staff/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin, remember: false }) }).catch(() => null);
+  const body = res ? await res.json().catch(() => ({})) : {};
+  $('adminPin').value = '';
+  if (res && res.ok && body.role === 'admin') { try { sessionStorage.setItem(ADMIN_KEY, JSON.stringify(body)); } catch {} openPricing(); return; }
+  if (res && res.ok) setPricingMsg('That is the staff PIN — pricing needs the admin PIN.');
+  else if (res && res.status === 429) setPricingMsg(`Too many wrong PINs. Try again in ${body.retry_after_min || 15} min.`);
+  else if (res && res.status === 401) setPricingMsg('Wrong PIN.');
+  else setPricingMsg('Network error — try again.');
+}
+
+async function savePricing() {
+  const targets = [...document.querySelectorAll('#pricingGrid input')].filter((i) => i.value !== '')
+    .map((i) => ({ key: i.dataset.key, margin_pct: Number(i.value) }));
+  if (targets.some((t) => !(t.margin_pct >= 0 && t.margin_pct < 90))) { setPricingMsg('Margins must be between 0 and 89.99%.'); return; }
+  $('pricingSave').disabled = true;
+  try {
+    const res = await fetch(API_BASE + '/v1/pricing/targets', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getAdmin() }, body: JSON.stringify({ targets }) });
+    if (res.status === 401 || res.status === 403) { try { sessionStorage.removeItem(ADMIN_KEY); } catch {} setPricingMsg('Admin session expired — enter the admin PIN again.'); openPricing(); return; }
+    if (!res.ok) { const b = await res.json().catch(() => ({})); setPricingMsg(b.error || 'Save failed (' + res.status + ').'); return; }
+    setPricingMsg('Saved. Suggested prices use the new targets now.', true);
+    if (state.q || hasFilters(state.filters)) search(false);
+  } catch { setPricingMsg('Network error — try again.'); }
+  finally { $('pricingSave').disabled = false; }
 }
 
 // ── filters ──
@@ -627,7 +703,12 @@ $('customerView').addEventListener('change', (e) => {
   document.body.classList.toggle('customer-view', e.target.checked);
   pref.set(VIEW_KEY, e.target.checked ? '1' : '0');
 });
-$('lockBtn').addEventListener('click', () => { clearSession(); showPin(); });
+$('lockBtn').addEventListener('click', () => { clearSession(); try { sessionStorage.removeItem(ADMIN_KEY); } catch {} $('pricingCard').classList.add('hidden'); showPin(); });
+$('pricingBtn').addEventListener('click', openPricing);
+$('pricingClose').addEventListener('click', () => $('pricingCard').classList.add('hidden'));
+$('adminUnlock').addEventListener('click', adminUnlock);
+$('adminPin').addEventListener('keydown', (e) => { if (e.key === 'Enter') adminUnlock(); });
+$('pricingSave').addEventListener('click', savePricing);
 
 if (getToken()) showSearch(); else showPin();
 </script>
