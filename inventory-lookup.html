@@ -122,6 +122,8 @@
 
   /* ── Search ── */
   .search-row { display: flex; gap: 10px; }
+  .search-sep { border-top: 1.5px solid var(--border); margin: 16px 0 14px; }
+  #searchCard .search-opts { margin-top: 0; }
   .search-row input[type="search"], .pin-row input {
     flex: 1; min-width: 0;
     padding: 13px 16px;
@@ -304,10 +306,6 @@
       <div class="feeds" id="feeds" aria-label="Feed status"></div>
     </div>
     <div class="card-body">
-      <form class="search-row" id="searchForm" autocomplete="off">
-        <input type="search" id="q" placeholder="UPC, model, SKU, or keywords — or just pick filters below" aria-label="Search inventory" autofocus>
-        <button class="btn-primary" id="searchBtn" type="submit">Search</button>
-      </form>
       <div class="search-opts">
         <label><input type="checkbox" id="inStock"> In stock only</label>
         <label><input type="checkbox" id="customerView"> Customer view (hide cost)</label>
@@ -321,6 +319,11 @@
         <select id="fCaliber" data-key="caliber" aria-label="Caliber"><option value="">All calibers</option></select>
         <select id="fDistributor" data-key="distributor" aria-label="Distributor"><option value="">All distributors</option></select>
       </div>
+      <div class="search-sep" role="separator"></div>
+      <form class="search-row" id="searchForm" autocomplete="off">
+        <input type="search" id="q" placeholder="UPC, model, SKU, or keywords" aria-label="Search inventory" autofocus>
+        <button class="btn-primary" id="searchBtn" type="submit">Search</button>
+      </form>
       <div class="msg err hidden" id="searchMsg"></div>
     </div>
   </div>
