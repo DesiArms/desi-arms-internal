@@ -181,6 +181,22 @@
   .pricing-grid input:focus { outline: none; border-color: var(--border-focus); }
   .pricing-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
   .msg.ok { color: var(--green); }
+  .count-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 6px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+  .count-badge.zero { background: var(--border); color: var(--text-muted); }
+  .watch-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 0 20px 12px; }
+  .watch-chip { font-size: 12px; font-weight: 600; color: var(--primary); background: rgba(30,58,95,0.08); border-radius: 12px; padding: 3px 10px; }
+  .watch-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 8px; padding: 0 20px 14px; align-items: center; }
+  .watch-form input { min-width: 0; padding: 8px 10px; font: inherit; font-size: 13px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--input-bg); }
+  .watch-form input:focus { outline: none; border-color: var(--border-focus); }
+  .watch-form .msg { grid-column: 1 / -1; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tab { background: var(--bg); border: 1.5px solid var(--border); border-radius: 16px; padding: 5px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer; }
+  .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .req-list td { font-size: 13px; vertical-align: top; white-space: normal; }
+  .req-list td.act { white-space: nowrap; text-align: right; }
+  .req-list a { color: var(--primary); }
+  .req-note { color: var(--text-muted); font-size: 12px; }
+  .soldout { color: var(--accent); font-weight: 600; }
   .msg { font-size: 13px; margin-top: 10px; font-weight: 500; }
   .msg.err { color: var(--error); }
 
@@ -268,6 +284,10 @@
     .alts td { padding-left: 6px; padding-right: 6px; }
     .item-head { padding: 14px 16px 8px; flex-wrap: wrap; }
     .thumb { flex-basis: 56px; width: 56px; height: 56px; }
+    .watch-form { grid-template-columns: 1fr 1fr; padding: 0 16px 12px; }
+    .watch-row { padding: 0 16px 10px; }
+    .req-list tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--bg); }
+    .req-list td { display: block; padding: 2px 0 !important; text-align: left !important; }
     .summary-bar { padding: 10px 16px; }
     .stat { padding-right: 12px; margin-right: 12px; }
     th, td { padding-left: 12px; padding-right: 12px; }
@@ -320,6 +340,7 @@
         <label><input type="checkbox" id="customerView"> Customer view (hide cost)</label>
         <button class="btn-secondary" type="button" id="lockBtn">Lock</button>
         <button class="btn-secondary" type="button" id="pricingBtn">Pricing</button>
+        <button class="btn-secondary sensitive" type="button" id="requestsBtn">Back in stock<span class="count-badge zero" id="requestsCount">0</span></button>
         <span class="hint">Scan a barcode or press Enter</span>
       </div>
       <div class="filters" id="filters" aria-label="Filters">
@@ -334,6 +355,23 @@
         <button class="btn-primary" id="searchBtn" type="submit">Search</button>
       </form>
       <div class="msg err hidden" id="searchMsg"></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER BACK-IN-STOCK REQUESTS (staff only: hidden in Customer view) -->
+  <div class="card hidden sensitive" id="requestsCard">
+    <div class="section-header">
+      <div class="section-title">Customer requests</div>
+      <button class="btn-secondary" type="button" id="requestsClose" style="margin-left:auto">Close</button>
+    </div>
+    <div class="card-body">
+      <div class="tabs" role="tablist">
+        <button class="tab active" type="button" data-status="back_in_stock">Back in stock</button>
+        <button class="tab" type="button" data-status="waiting">Waiting</button>
+        <button class="tab" type="button" data-status="closed">Closed</button>
+      </div>
+      <div id="requestsList"></div>
+      <span class="msg" id="requestsMsg"></span>
     </div>
   </div>
 
@@ -417,6 +455,13 @@ async function api(path) {
   if (!res.ok) throw new Error('Backend error (' + res.status + '). Try again.');
   return res.json();
 }
+async function apiWrite(method, path, body) {
+  const res = await fetch(API_BASE + path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() }, body: JSON.stringify(body || {}) });
+  if (res.status === 401) throw new SessionExpired();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Save failed (' + res.status + ').');
+  return data;
+}
 function showMsg(el, text) { el.textContent = text; el.classList.toggle('hidden', !text); }
 
 // ── views ──
@@ -435,7 +480,9 @@ function showSearch() {
   $('q').focus();
   loadFeeds();
   loadFacets();
+  loadRequestCount();
 }
+setInterval(() => { if (!$('searchCard').classList.contains('hidden')) loadRequestCount(); }, 5 * 60_000);
 function expired() { clearSession(); showPin('Session expired — enter the PIN again.'); }
 
 async function loadFeeds() {
@@ -495,6 +542,18 @@ function renderItem(it) {
       </div>
       <span class="stock-badge ${s.in_stock ? 'in' : 'out'}">${s.in_stock ? 'In stock · ' + s.total_qty : 'Out of stock'}</span>
     </div>
+    <div class="watch-row sensitive">
+      ${it.watch_count ? `<span class="watch-chip">${it.watch_count} customer${it.watch_count === 1 ? '' : 's'} waiting</span>` : ''}
+      <button class="link-btn" type="button" data-watch-open="${esc(it.id)}">${s.in_stock ? '+ Customer request' : '+ Notify customer when back'}</button>
+    </div>
+    <form class="watch-form sensitive hidden" data-watch-form="${esc(it.id)}" autocomplete="off">
+      <input name="customer_name" placeholder="Customer name" maxlength="120" required>
+      <input name="customer_phone" placeholder="Phone" maxlength="40" inputmode="tel">
+      <input name="customer_email" placeholder="Email" maxlength="200" type="email">
+      <input name="note" placeholder="Note (optional)" maxlength="500">
+      <span><button class="btn-primary" type="submit">Save</button> <button class="btn-secondary" type="button" data-watch-cancel>Cancel</button></span>
+      <span class="msg err"></span>
+    </form>
     ${attrs ? `<div class="attrs">${attrs}</div>` : ''}
     <div class="summary-bar">
       <div class="stat sensitive"><span class="stat-label">Best cost</span><span class="stat-value">${money(s.best_cost)}${bestName ? `<small>${esc(bestName)}</small>` : ''}</span></div>
@@ -591,6 +650,71 @@ async function savePricing() {
     if (state.q || hasFilters(state.filters)) search(false);
   } catch { setPricingMsg('Network error — try again.'); }
   finally { $('pricingSave').disabled = false; }
+}
+
+// ── customer back-in-stock requests ──
+let requestsTab = 'back_in_stock';
+const when = (iso) => iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+
+async function loadRequestCount() {
+  try {
+    const s = await api('/v1/watches/summary');
+    if (!s) return;
+    const el = $('requestsCount');
+    el.textContent = s.back_in_stock;
+    el.classList.toggle('zero', !s.back_in_stock);
+    el.title = `${s.back_in_stock} back in stock, ${s.waiting} waiting`;
+  } catch (e) { if (e instanceof SessionExpired) expired(); }
+}
+
+async function openRequests(tab) {
+  if (tab) requestsTab = tab;
+  $('requestsCard').classList.remove('hidden');
+  document.querySelectorAll('#requestsCard .tab').forEach((t) => t.classList.toggle('active', t.dataset.status === requestsTab));
+  $('requestsList').innerHTML = '<div class="alts-note">Loading…</div>';
+  try {
+    const data = await api('/v1/watches?status=' + encodeURIComponent(requestsTab));
+    const list = (data && data.watches) || [];
+    if (!list.length) {
+      $('requestsList').innerHTML = `<div class="alts-note">${{ back_in_stock: 'Nothing back in stock for a customer right now.', waiting: 'No customers waiting.', closed: 'No closed requests in the last 90 days.' }[requestsTab]}</div>`;
+      return;
+    }
+    $('requestsList').innerHTML = `<div class="table-wrap"><table class="req-list"><tbody>${list.map((w) => {
+      const contact = [w.customer_phone && `<a href="tel:${esc(w.customer_phone.replace(/[^\d+]/g, ''))}">${esc(w.customer_phone)}</a>`, w.customer_email && `<a href="mailto:${esc(w.customer_email)}">${esc(w.customer_email)}</a>`].filter(Boolean).join(' · ');
+      const avail = w.available_qty ? `${esc(w.available_qty)} at ${esc(w.available_at.join(', '))}` : (w.status === 'back_in_stock' ? '<span class="soldout">Sold out again</span>' : 'Not in stock');
+      const actions = w.status === 'back_in_stock'
+        ? `<button class="btn-primary" type="button" data-req="${esc(w.id)}" data-to="contacted">Contacted</button> ${w.available_qty ? '' : `<button class="btn-secondary" type="button" data-req="${esc(w.id)}" data-to="waiting">Keep waiting</button>`} <button class="btn-secondary" type="button" data-req="${esc(w.id)}" data-to="cancelled">Cancel</button>`
+        : w.status === 'waiting' ? `<button class="btn-secondary" type="button" data-req="${esc(w.id)}" data-to="cancelled">Cancel</button>`
+        : `<span class="req-note">${esc(w.status === 'contacted' ? 'Contacted' : 'Cancelled')} ${esc(when(w.closed_at))}</span>`;
+      return `<tr>
+        <td><span class="alt-link" data-upc="${esc(w.upc || '')}" data-name="${esc(w.item_name || '')}">${esc(w.item_name || w.mfg_model_no)}</span><div class="td-muted">${esc([w.manufacturer, w.upc && 'UPC ' + w.upc].filter(Boolean).join(' · '))}</div></td>
+        <td><b>${esc(w.customer_name)}</b><div>${contact}</div>${w.note ? `<div class="req-note">${esc(w.note)}</div>` : ''}</td>
+        <td>${avail}<div class="td-muted">Asked ${esc(when(w.created_at))}${w.back_in_stock_at ? ' · back ' + esc(when(w.back_in_stock_at)) : ''}</div></td>
+        <td class="act">${actions}</td>
+      </tr>`; }).join('')}</tbody></table></div>`;
+  } catch (e) { if (e instanceof SessionExpired) expired(); else $('requestsList').innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
+}
+
+async function setRequest(id, status) {
+  try { await apiWrite('PATCH', '/v1/watches/' + encodeURIComponent(id), { status }); openRequests(); loadRequestCount(); }
+  catch (e) { if (e instanceof SessionExpired) expired(); else showMsg($('requestsMsg'), e.message); }
+}
+
+async function saveWatch(form) {
+  const err = form.querySelector('.msg');
+  const body = Object.fromEntries(new FormData(form).entries());
+  body.item_id = Number(form.dataset.watchForm);
+  if (!body.customer_name.trim()) { err.textContent = 'Customer name is required.'; return; }
+  if (!body.customer_phone.trim() && !body.customer_email.trim()) { err.textContent = 'Add a phone number or email.'; return; }
+  form.querySelector('[type=submit]').disabled = true;
+  try {
+    await apiWrite('POST', '/v1/watches', body);
+    form.reset(); form.classList.add('hidden');
+    const it = state.results.find((x) => String(x.id) === String(body.item_id));
+    if (it) { it.watch_count = (it.watch_count || 0) + 1; renderResults(!$('moreRow').classList.contains('hidden')); }
+    loadRequestCount();
+  } catch (e) { if (e instanceof SessionExpired) expired(); else err.textContent = e.message; }
+  finally { form.querySelector('[type=submit]').disabled = false; }
 }
 
 // ── filters ──
@@ -709,6 +833,10 @@ const rerun = () => { if ($('q').value.trim() || hasFilters(readFilters())) sear
 $('inStock').addEventListener('change', rerun);
 for (const id of FILTER_IDS) $(id).addEventListener('change', rerun);
 $('results').addEventListener('click', (e) => {
+  const open = e.target.closest('[data-watch-open]');
+  if (open) { const f = document.querySelector(`[data-watch-form="${CSS.escape(open.dataset.watchOpen)}"]`); f.classList.toggle('hidden'); if (!f.classList.contains('hidden')) f.querySelector('input').focus(); return; }
+  const cancel = e.target.closest('[data-watch-cancel]');
+  if (cancel) { const f = cancel.closest('form'); f.reset(); f.querySelector('.msg').textContent = ''; f.classList.add('hidden'); return; }
   const altBtn = e.target.closest('[data-show-alts]');
   if (altBtn) { loadAlternatives(altBtn.dataset.showAlts); return; }
   const link = e.target.closest('.alt-link');
@@ -725,8 +853,18 @@ $('customerView').addEventListener('change', (e) => {
   document.body.classList.toggle('customer-view', e.target.checked);
   pref.set(VIEW_KEY, e.target.checked ? '1' : '0');
 });
-$('lockBtn').addEventListener('click', () => { clearSession(); try { sessionStorage.removeItem(ADMIN_KEY); } catch {} $('pricingCard').classList.add('hidden'); showPin(); });
+$('lockBtn').addEventListener('click', () => { clearSession(); $('requestsCard').classList.add('hidden'); try { sessionStorage.removeItem(ADMIN_KEY); } catch {} $('pricingCard').classList.add('hidden'); showPin(); });
 $('pricingBtn').addEventListener('click', openPricing);
+$('requestsBtn').addEventListener('click', () => openRequests());
+$('requestsClose').addEventListener('click', () => $('requestsCard').classList.add('hidden'));
+document.querySelectorAll('#requestsCard .tab').forEach((t) => t.addEventListener('click', () => openRequests(t.dataset.status)));
+$('requestsList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-req]');
+  if (b) { setRequest(b.dataset.req, b.dataset.to); return; }
+  const link = e.target.closest('.alt-link');
+  if (link) { for (const id of FILTER_IDS) $(id).value = ''; $('q').value = link.dataset.upc || link.dataset.name; search(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+});
+$('results').addEventListener('submit', (e) => { const f = e.target.closest('[data-watch-form]'); if (f) { e.preventDefault(); saveWatch(f); } });
 $('pricingClose').addEventListener('click', () => $('pricingCard').classList.add('hidden'));
 $('adminUnlock').addEventListener('click', adminUnlock);
 $('adminPin').addEventListener('keydown', (e) => { if (e.key === 'Enter') adminUnlock(); });
