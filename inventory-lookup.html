@@ -183,6 +183,7 @@
   .msg.ok { color: var(--green); }
   .count-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 6px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
   .count-badge.zero { background: var(--border); color: var(--text-muted); }
+  .count-badge.wait:not(.zero) { background: var(--primary); }
   .watch-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 0 20px 12px; }
   .watch-chip { font-size: 12px; font-weight: 600; color: var(--primary); background: rgba(30,58,95,0.08); border-radius: 12px; padding: 3px 10px; }
   .watch-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 8px; padding: 0 20px 14px; align-items: center; }
@@ -341,7 +342,7 @@
         <button class="btn-secondary" type="button" id="lockBtn">Lock</button>
         <button class="btn-secondary" type="button" id="pricingBtn">Pricing</button>
         <button class="btn-secondary sensitive" type="button" id="requestsBtn">Back in stock<span class="count-badge zero" id="requestsCount">0</span></button>
-        <span class="hint">Scan a barcode or press Enter</span>
+        <button class="btn-secondary sensitive" type="button" id="waitingBtn">Waiting<span class="count-badge zero" id="waitingCount">0</span></button>
       </div>
       <div class="filters" id="filters" aria-label="Filters">
         <select id="fCategory" data-key="category" aria-label="Category"><option value="">All categories</option></select>
@@ -354,6 +355,7 @@
         <input type="search" id="q" placeholder="UPC, model, SKU, or keywords" aria-label="Search inventory" autofocus>
         <button class="btn-primary" id="searchBtn" type="submit">Search</button>
       </form>
+      <div class="hint" style="margin-top:6px;text-align:right">Scan a barcode or press Enter</div>
       <div class="msg err hidden" id="searchMsg"></div>
     </div>
   </div>
@@ -664,7 +666,12 @@ async function loadRequestCount() {
     const el = $('requestsCount');
     el.textContent = s.back_in_stock;
     el.classList.toggle('zero', !s.back_in_stock);
-    el.title = `${s.back_in_stock} back in stock, ${s.waiting} waiting`;
+    el.title = `${s.back_in_stock} customer request${s.back_in_stock === 1 ? '' : 's'} back in stock`;
+    const w = $('waitingCount');
+    w.textContent = s.waiting;
+    w.classList.add('wait');
+    w.classList.toggle('zero', !s.waiting);
+    w.title = `${s.waiting} customer request${s.waiting === 1 ? '' : 's'} still waiting`;
   } catch (e) { if (e instanceof SessionExpired) expired(); }
 }
 
@@ -856,7 +863,8 @@ $('customerView').addEventListener('change', (e) => {
 });
 $('lockBtn').addEventListener('click', () => { clearSession(); $('requestsCard').classList.add('hidden'); try { sessionStorage.removeItem(ADMIN_KEY); } catch {} $('pricingCard').classList.add('hidden'); showPin(); });
 $('pricingBtn').addEventListener('click', openPricing);
-$('requestsBtn').addEventListener('click', () => openRequests());
+$('requestsBtn').addEventListener('click', () => openRequests('back_in_stock'));
+$('waitingBtn').addEventListener('click', () => openRequests('waiting'));
 $('requestsClose').addEventListener('click', () => $('requestsCard').classList.add('hidden'));
 document.querySelectorAll('#requestsCard .tab').forEach((t) => t.addEventListener('click', () => openRequests(t.dataset.status)));
 $('requestsList').addEventListener('click', (e) => {
