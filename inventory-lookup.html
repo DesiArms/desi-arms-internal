@@ -547,12 +547,13 @@ function renderItem(it) {
       <button class="link-btn" type="button" data-watch-open="${esc(it.id)}">${s.in_stock ? '+ Customer request' : '+ Notify customer when back'}</button>
     </div>
     <form class="watch-form sensitive hidden" data-watch-form="${esc(it.id)}" autocomplete="off">
-      <input name="customer_name" placeholder="Customer name" maxlength="120" required>
-      <input name="customer_phone" placeholder="Phone" maxlength="40" inputmode="tel">
-      <input name="customer_email" placeholder="Email" maxlength="200" type="email">
+      <input name="customer_name" placeholder="Customer name" aria-label="Customer name" maxlength="120" required>
+      <input name="customer_phone" placeholder="Customer phone" aria-label="Customer phone, for you to call" maxlength="40" inputmode="tel">
+      <input name="customer_email" placeholder="Customer email (optional)" aria-label="Customer email, for you to contact them; nothing is sent automatically" maxlength="200" type="email">
       <input name="note" placeholder="Note (optional)" maxlength="500">
       <span><button class="btn-primary" type="submit">Save</button> <button class="btn-secondary" type="button" data-watch-cancel>Cancel</button></span>
       <span class="msg err"></span>
+      <span class="req-note" style="grid-column:1/-1">For your follow-up only. Nothing is sent to the customer automatically.</span>
     </form>
     ${attrs ? `<div class="attrs">${attrs}</div>` : ''}
     <div class="summary-bar">
